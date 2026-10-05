@@ -72,19 +72,22 @@ Le projet est **jouable mais pas terminé**. Ne le présente pas comme fini.
 
 | # | quoi | où | coût |
 |---|---|---|---|
-| 1 | **Réécrire les quêtes des ateliers 2 à 7** sur le fil rouge du vol | `content/quests/m2..m7.js` | le gros du travail restant |
-| 2 | **Écrire l'atelier 8**, la manœuvre finale : la pile complète, la preuve | `content/quests/m8.js` | dépend du 1 |
-| 3 | **Une sauvegarde** du volume | hors dépôt | petit, à faire avant un vrai cours |
-| 4 | Nettoyer le CSS mort, `inject-fetchhint.js` | `public/style.css`, `scripts/` | cosmétique |
+| 1 | **Écrire l'atelier 8**, la manœuvre finale : la pile complète, la preuve | `content/quests/m8.js` | le gros du travail restant |
+| 2 | **Une sauvegarde** du volume | hors dépôt | petit, à faire avant un vrai cours |
+| 3 | Nettoyer le CSS mort, `inject-fetchhint.js` | `public/style.css`, `scripts/` | cosmétique |
 
-L'atelier 1 est le seul entièrement réécrit. **Le jeu n'est pas cohérent de bout
-en bout** : les intros racontent le vol Beluga, les quêtes des ateliers 2 à 7
-racontent encore la librairie Verdi. C'est assumé et documenté — l'URL n'est pas
-annoncée, elle sert à l'enseignant pendant la construction.
+Les ateliers 1 à 7 racontent le vol de bout en bout. Il reste la manœuvre
+finale, et elle est **le seul atelier qui ne soit pas encore écrit**.
 
-**Écrire le 8 dépend-il du 1 ?** Oui. La manœuvre finale réutilise la pile
-que les ateliers 4 à 7 ont fait construire ; l'écrire avant tiendrait à un
-contenu qui va changer sous elle.
+**Le seul atelier manquant est le 8.** Les sept autres racontent le vol : leurs
+intros, leurs énoncés, leurs questions et leurs flags ont été basculés de
+l'ancienne intrigue vers celle-ci par `outils/passe-becane.py`.
+
+**Écrire le 8.** C'est le dernier morceau, et il est le plus long : une seule
+quête, mais qui doit assembler tout ce que les ateliers 4 à 7 ont construit —
+un réseau privé, deux services qui se trouvent par leur nom, une image
+versionnée, un volume — et le prouver. Elle porte 800 points (m7 finit à 700),
+et comme elle est seule dans son module, elle est forcément sa quête phare.
 
 ### Comment réécrire un atelier
 
@@ -186,7 +189,7 @@ passe des élèves. **C'est la cause la plus fréquente d'échec du job
 
 ```bash
 npm install          # une seule dépendance : express (+ linkedom en dev)
-npm test             # 215 tests
+npm test             # 217 tests
 npm start            # http://localhost:8000
 ```
 
@@ -263,7 +266,7 @@ public/
 outils/
   navigateur/           recette dans un vrai Chromium (CDP) — § 10
   intro-modules.py      réécrit le bloc `meta` des sept ateliers
-test/                   215 tests
+test/                   217 tests
 docs/
   CONTRACTS.md          source de vérité : schéma de quête + contrat d'API
   REPRISE.md            ce document
@@ -453,11 +456,26 @@ démarre pas le matin.
 | 7 | 📚 Carte de bord | Documenter la carte | `m7-documenter-la-carte` | 3 |
 | 8 | 🛬 Atterrissage | — | `m8-…` | **1, à écrire** |
 
-**Les quêtes 2 à 7 gardent encore leurs titres et leurs énoncés de l'ancienne
-version** (« Le premier serveur de la librairie », « La méthode de la
-librairie »). C'est ce que le § 2 est là pour dire. `python3
-outils/intro-modules.py --verifier` ne le détecte pas : il ne regarde que les
-**intros**, pas les quêtes.
+**Les ateliers 1 à 7 racontent le vol de bout en bout.** Le renommage a été
+fait par `outils/passe-becane.py`, un script, et non à la main — les noms
+revenaient des dizaines de fois par fichier, et une réécriture manuelle laisse
+toujours un oubli. Le script applique des motifs, il ne réécrit pas de prose.
+
+`python3 outils/passe-becane.py --verifier` compte ce qui reste à faire et signale
+toute ligne qui porte encore l'ancienne intrigue. **Le test qui l'interdit est
+`test/content.test.js`** — il porte sur les énoncés, les titres, les flags, les
+questions et les réflexes, ce qu'un script ne peut pas garantir.
+
+Deux pièges que le renommage a produits, et qui sont instructifs :
+
+- **Un motif suit le nom, pas l'intention.** `grep -i verdi` est devenu
+  `grep -i cabine` — mais la page affiche « Restauration Beluga », et la
+  commande ne trouvait plus rien. Six énoncés promettaient un résultat que la
+  commande ne pouvait pas produire.
+- **Le genre change avec le nom.** « librairie » est féminin, « service » est
+  masculin. « Le service n'est pas **seule** » s'est glissé dans trois phrases
+  sans qu'aucun test ne le voie : la faute est dans la prose, pas dans la
+  structure.
 
 Chaque fichier `content/quests/m<N>.js` exporte **un objet** `{ meta, quests }`
 en ESM.
@@ -688,14 +706,15 @@ Liste courte des erreurs récurrentes. Chacune a coûté du temps.
    reconsidérer si l'enseignant veut plus de mémorisation.
 6. **`inject-fetchhint.js`** a servi une fois à migrer le contenu. Conservé par
    prudence, sans raison d'être.
-7. **Le contenu est incohérent avant la v1.0.** Voir § 2.
+7. **L'atelier 8 n'existe pas.** Pas de manœuvre finale, donc la ligne
+   « Atterrissage » du carnet de bord ne s'allume jamais. Voir § 2.
 
 ---
 
 ## 15. Si tu reprends ce projet
 
-**D'abord le § 2.** Le travail qui reste est listé, chiffré, et l'ordre compte :
-les ateliers 2 à 7 d'abord, l'atelier 8 ensuite, parce qu'il en dépend.
+**D'abord le § 2.** Le travail qui reste est listé et chiffré : l'atelier 8,
+puis une sauvegarde du volume.
 
 **Écrire du contenu.** C'est là que ce projet a le plus de valeur et le moins
 d'obstacle. Un atelier = un bloc de cours ; respecter `docs/CONTRACTS.md` § 1 et

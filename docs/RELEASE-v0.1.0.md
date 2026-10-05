@@ -241,22 +241,23 @@ démarre et sert le programme, et la recette dans un vrai Chromium
 
 ## Ce que cette version n'est pas
 
-1. **Le contenu est incohérent.** Les intros racontent le vol Beluga, les quêtes
-   des ateliers 2 à 7 racontent encore la librairie Verdi. L'URL n'est pas
-   annoncée ; elle sert à l'enseignant pendant la construction.
-2. **L'atelier 8 n'existe pas.** Pas de manœuvre finale, donc la ligne
-   « Atterrissage » du carnet de bord ne s'allume jamais.
-3. **Aucune sauvegarde.** Le volume est sur le seul disque du serveur, à 86 %
+1. **L'atelier 8 n'existe pas.** C'est le seul atelier qui ne soit pas écrit :
+   pas de manœuvre finale, donc la ligne « Atterrissage » du carnet de bord ne
+   s'allume jamais.
+2. **Aucune sauvegarde.** Le volume est sur le seul disque du serveur, à 86 %
    utilisés. Hors périmètre pour l'instant, mais c'est le risque le plus élevé du
    déploiement.
-4. **`LINEAR_PROGRESSION` n'est pas une contrainte serveur**, comme avant.
+3. **`LINEAR_PROGRESSION` n'est pas une contrainte serveur**, comme avant.
+
+> Cette version a été publiée avec le contenu des ateliers 2 à 7 encore écrit
+> pour l'ancienne intrigue. C'est corrigé en **v0.2.0**, qui bascule les 27
+> quêtes sur le vol Beluga.
 
 ---
 
 ## La suite
 
-1. Réécrire les quêtes des ateliers 2 à 7.
-2. Écrire l'atelier 8 — après, parce qu'il dépend de la pile que les ateliers 4 à
-   7 font construire.
-3. Configurer une sauvegarde du volume.
-4. `v1.0.0`, quand le contenu est cohérent de bout en bout.
+1. Écrire l'atelier 8 — la manœuvre finale, qui dépend de la pile que les
+   ateliers 4 à 7 font construire.
+2. Configurer une sauvegarde du volume.
+3. `v1.0.0`, quand le jeu est complet.

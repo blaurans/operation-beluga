@@ -156,15 +156,82 @@ démarre et sert le programme, et la recette dans un vrai Chromium
 1. **Le contenu est incohérent avant la v1.0.** Les intros racontent le vol
    Beluga, les quêtes des ateliers 2 à 7 racontent encore la librairie Verdi.
    L'URL n'est pas annoncée : elle sert à l'enseignant pendant la construction.
-2. **L'atelier 8 n'existe pas.** Pas de manœuvre finale, donc pas d'atterrissage
-   dans le carnet de bord.
+   → **corrigé en v0.2.0.**
+2. **L'atelier 8 n'existe pas.** Pas de manœuvre finale, donc la ligne
+   « Atterrissage » du carnet de bord ne s'allume jamais.
 3. **Aucune sauvegarde.** Le volume est sur le seul disque du serveur, à 86 %.
    Hors périmètre pour l'instant.
 4. **`LINEAR_PROGRESSION` n'est pas une contrainte serveur**, comme avant.
 
 ---
 
+## [0.2.0] — 2026-10-05
+
+Les 27 quêtes basculent sur l'intrigue du vol Beluga. **Le jeu est cohérent de
+bout en bout** : les sept ateliers racontent le même vol, du diagnostic à la
+carte de bord.
+
+Le renommage est passé par `outils/passe-becane.py` plutôt qu'à la main. Les
+noms reviennent des dizaines de fois par fichier — `verdi` seul en apparaissait
+114 fois dans l'atelier 6 — et une réécriture manuelle laisse toujours un
+oubli. Un grep, lui, ne laisse rien.
+
+| avant | après |
+|---|---|
+| conteneur `verdi` | `cabine` |
+| base `verdi-db` | `cabine-db` |
+| réseau `reseau-verdi` | `reseau-cabine` |
+| image `verdi-site:1.0` | `service-cabine:1.0` |
+| `NOM_DU_SITE` | `NOM_DU_SERVICE` |
+| flags `VERDI_*` | `CABINE_*` |
+| « le stock de la librairie » | les plateaux du service de restauration |
+
+**Les commandes sont renommées dans le même passage que les énoncés.** Elles
+sont ce que l'élève tape : si le texte change et pas la commande, la correction
+ne correspond plus à ce qu'il a fait. C'est la contrainte qui a dicté l'ordre
+des substitutions.
+
+### Défauts trouvés au passage
+
+- **`grep -i cabine` ne trouvait rien.** La substitution avait porté le motif
+  du `grep` sur le nom du conteneur, alors que la page affiche « Restauration
+  Beluga ». Six commandes promises dans les énoncés et leurs corrections
+  échouaient, et l'élève lisait un échec sans comprendre pourquoi. C'est le
+  piège d'un renommage par motif : le motif a suivi le nom, pas ce que la
+  commande cherche réellement.
+- **L'accord avait sauté.** « librairie » est féminin, « service » est masculin :
+  « le service n'est pas **seule** derrière son firewall », « le service n'est
+  pas **terminée** ». Le nom change, la grammaire doit suivre.
+- **Une explication était en anglais**, au milieu d'un jeu entièrement français.
+- Une question portait `MON_SITE`, incohérent avec la variable de l'énoncé.
+- « Le premier serveur de la librairie » était devenu « Le premier serveur de
+  **le** service de restauration » : la substitution ne connaît pas le genre de
+  l'article qui la suit.
+
+### Deux tests sur le fond
+
+Aucun test ne vérifiait que le **contenu** racontait la bonne histoire. C'est
+ajouté maintenant, après coup — parce que le nom du produit a déjà changé deux
+fois sans que ce contrôle existe :
+
+- aucune quête ne parle plus de l'ancienne intrigue : ni énoncé, ni titre, ni
+  flag, ni question, ni réflexe ;
+- **le fil rouge ne porte jamais une question de compréhension**. Un élève qui
+  répond « parce qu'il faut garder Beluga en vie » n'a rien appris du Docker,
+  et le jeu ne doit pas lui faire croire le contraire. C'est une règle de
+  rédaction, pas de forme : le validateur de contenu ne peut pas la vérifier.
+
+Le second test ignore le texte entre accents graves, parce que `cabine-db` et
+`reseau-cabine` sont des **noms de ressources** et non du récit. Sans cette
+distinction, il échouait sur la première question réseau — et il aurait été
+écarté au lieu d'être corrigé.
+
+217 tests.
+
+---
+
 ## [1.0.0] — à venir
 
-Le gel. Il conditionne : les 28 quêtes réécrites, la manœuvre finale écrite et
-validée par `check-fetchhints`, et un contenu cohérent de bout en bout.
+Le gel. Il conditionne : l'atelier 8 écrit et validé par `check-fetchhints` —
+c'est-à-dire 28 quêtes, dont une manœuvre finale qui assemble toute la pile —
+et une sauvegarde du volume.
