@@ -456,7 +456,7 @@ d'un copier-coller — et c'est vérifié par le validateur de contenu, qui fait
 ## Vérifications automatiques
 
 ```bash
-npm test                      # 214 tests — 10 s
+npm test                      # 215 tests — 10 s
 npm run check-content         # le contenu est chargeable
 npm run smoke                 # joue les 28 quêtes (demande un portail)
 npm run check-fetchhints      # REJOUE chaque commande de récupération — demande Docker
@@ -531,7 +531,7 @@ public/
   admin.html + admin.js l'écran de l'enseignant, servi sur `/admin`
   md.js                 mini-renderer Markdown
   style.css             une feuille pour les deux écrans
-test/                   214 tests
+test/                   215 tests
 docs/
   CONTRACTS.md          source de vérité : schéma de quête + contrat d'API
   REPRISE.md            tout ce qu'il faut savoir pour reprendre le projet

@@ -186,7 +186,7 @@ passe des élèves. **C'est la cause la plus fréquente d'échec du job
 
 ```bash
 npm install          # une seule dépendance : express (+ linkedom en dev)
-npm test             # 214 tests
+npm test             # 215 tests
 npm start            # http://localhost:8000
 ```
 
@@ -263,7 +263,7 @@ public/
 outils/
   navigateur/           recette dans un vrai Chromium (CDP) — § 10
   intro-modules.py      réécrit le bloc `meta` des sept ateliers
-test/                   214 tests
+test/                   215 tests
 docs/
   CONTRACTS.md          source de vérité : schéma de quête + contrat d'API
   REPRISE.md            ce document
@@ -543,7 +543,7 @@ le plus facile à manquer.
 ## 9. Les vérifications
 
 ```bash
-npm test                      # 214 tests — 10 s
+npm test                      # 215 tests — 10 s
 npm run check-content         # le contenu est chargeable
 npm run smoke                 # joue toutes les quêtes (demande un portail)
 npm run check-fetchhints -- <url>   # REJOUE les commandes — demande Docker

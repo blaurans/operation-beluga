@@ -323,6 +323,35 @@ test('le flux est fermé quand on quitte la session', async () => {
   assert.ok(flux);
 });
 
+test('les deux écrans portent le nom du produit, et pas celui d\'avant', () => {
+  // L'écran d'administration a affiché « ATELIER DOCKER » pendant toute la
+  // construction d'Opération Beluga, alors que le formulaire de connexion
+  // portrait déjà le bon nom. Personne ne l'avait vu : le changement de nom
+  // avait été fait au `<div>` du formulaire, et l'en-tête de la classe — qui
+  // n'apparaît qu'une fois connecté — avait été oublié.
+  //
+  // Aucun test ne le voyait. Il a fallu ouvrir `/admin` dans un vrai
+  // navigateur, se connecter, et regarder la capture.
+  //
+  // Ce test existe pour que la prochaine occurrence soit trouvée en une
+  // seconde, et non au prochain cours. Il lit le HTML **servi**, pas une
+  // constante : c'est le fichier que le navigateur reçoit qui compte.
+  for (const [fichier, attendu] of [
+    ['public/index.html', /OPÉRATION BELUGA/],
+    ['public/admin.html', /OPÉRATION BELUGA/],
+  ]) {
+    const page = fs.readFileSync(path.resolve(fichier), 'utf8');
+    assert.match(page, attendu, `${fichier} doit porter le nom du produit`);
+    assert.doesNotMatch(page, /ATELIER DOCKER/i,
+      `${fichier} porte encore le nom de l'ancien produit`);
+  }
+
+  // Le `<title>` du navigateur, et la balise de description : ce qui apparaît
+  // dans l'onglet et dans un favori.
+  const admin = fs.readFileSync(path.resolve('public/admin.html'), 'utf8');
+  assert.match(admin, /<title>Administration — Opération Beluga<\/title>/);
+});
+
 test('le mémento curl dit où trouver le mot de passe, et avertit', async () => {
   inscrits = [];
   installerFetch();

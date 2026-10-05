@@ -23,7 +23,7 @@ propre VM Ubuntu Server vierge, travaille **seul**, et tape ses commandes dans s
 propre terminal. Le portail ne fait que **valider** : il ne se connecte jamais au
 Docker des élèves, et n'exécute aucune commande à leur place.
 
-**7 ateliers · 27 quêtes · ~7 h de contenu indicatif · 214 tests.**
+**7 ateliers · 27 quêtes · ~7 h de contenu indicatif · 215 tests.**
 
 ---
 
@@ -233,7 +233,7 @@ lecteur.
 
 ## Vérifications
 
-214 tests, la validation du contenu, la construction de l'image, un conteneur qui
+215 tests, la validation du contenu, la construction de l'image, un conteneur qui
 démarre et sert le programme, et la recette dans un vrai Chromium
 (`verifie-jeu.mjs`) sur les ateliers 1, 2 et 3.
 

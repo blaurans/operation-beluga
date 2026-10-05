@@ -138,10 +138,16 @@ pas pour l'historique ligne à ligne.
 - **Trois fichiers contenaient des caractères CJK** introduits par accident
   (`docker-compose.yml`, `test/admin.test.js`, `test/format.test.js`) : des
   traductions faites à la main dans un commentaire. Corrigés.
+- **L'en-tête de `/admin` affichait encore « ATELIER DOCKER »**, alors que le
+  formulaire de connexion portait déjà le nouveau nom. Le changement avait été
+  fait au `<div>` du formulaire ; l'en-tête de la classe, qui n'apparaît qu'une
+  fois connecté, avait été oublié. Trouvé en ouvrant `/admin` dans un vrai
+  navigateur — aucun test ne le voyait. Un test lit maintenant les deux pages
+  servies.
 
 ### Vérifications
 
-214 tests, la validation du contenu, la construction de l'image, un conteneur qui
+215 tests, la validation du contenu, la construction de l'image, un conteneur qui
 démarre et sert le programme, et la recette dans un vrai Chromium
 (`verifie-jeu.mjs`) sur les ateliers 1, 2 et 3.
 
