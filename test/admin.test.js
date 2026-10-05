@@ -178,7 +178,14 @@ test('toutes les actions d\'administration exigent le mot de passe', async () =>
   // Et le joueur est intact : un refus ne doit rien avoir touché.
   const me = (await brut('/api/me', { headers: { 'X-Arena-Token': inscrit.token } })).json;
   assert.equal(me.team, 'Cible');
-  assert.equal(me.progress, `0/${27}`);
+  // Le total vient de la réponse du serveur, pas d'un nombre écrit ici : c'est
+  // le seul moyen que ce test survive à l'ajout d'un atelier.
+  //
+  // On ne peut pas importer `src/questpack.js` pour le lire : un import ESM est
+  // évalué **avant** les `process.env` ci-dessus, et `config.js` lit
+  // l'environnement une seule fois — le fichier entier voyait alors une clé
+  // d'administration vide. Voir docs/REPRISE.md § 4.
+  assert.equal(me.progress, `0/${me.total_quests}`);
 });
 
 /* ------------------------------------------------------------ la session */

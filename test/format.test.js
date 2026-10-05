@@ -29,8 +29,11 @@ const modules = await Promise.all(fichiers.map(async (f) => {
 
 const quetes = modules.flatMap((m) => m.quests.map((q) => ({ ...q, module: m.meta.module })));
 
-test('le jeu a bien 7 ateliers', () => {
-  assert.equal(modules.length, 7, `${modules.length} ateliers`);
+test('le jeu a bien 8 ateliers', () => {
+  // Sept ateliers de cours, plus la manœuvre finale. Le nombre est écrit en
+  // dur et non déduit du contenu : c'est le test qui garantit qu'aucun fichier
+  // ne disparaît du répertoire sans qu'on le décide.
+  assert.equal(modules.length, 8, `${modules.length} ateliers`);
 });
 
 test('chaque quête a au moins une question de compréhension', () => {

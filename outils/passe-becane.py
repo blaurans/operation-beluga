@@ -74,7 +74,17 @@ VESTIGES = [
     ('m5-04-la-methode-de-la-librairie', 'm5-04-la-methode-de-la-cabine'),
 
     # Le nom du conteneur principal, seul.
-    ('verdi', 'cabine'),
+    #
+    # Passé en `regex` avec frontières de mot, et c'est indispensable : sans
+    # elles, `verdi` transformait le mot français **verdict** en « cabinect ».
+    # Le script ne signalait rien — il corruption un mot parfaitement innocent,
+    # dans quatre fichiers, et `--verifier` annonçait unRename propre.
+    #
+    # C'est le troisième exemplaire du même piège dans ce projet : un motif
+    # suit une chaîne, pas une intention. Un `grep -i` transformait le `grep`
+    # d'un énoncé en un motif qui ne trouvait plus rien ; ici c'est un mot de la
+    # langue française qui disparaît dans un identifiant.
+    ('verdi', 'cabine', r'\bverdi\b'),
 
     # Textes : la librairie Verdi devient le service de restauration.
     # « Le site de la librairie » devient « le service de restauration » par la
@@ -84,24 +94,28 @@ VESTIGES = [
     #
     # Elles viennent **avant** la règle générale, et c'est pour ça qu'elles
     # mentionnent encore « la librairie » : c'est la forme d'origine qu'elles
-    # doivent attraper. En les déplacer après, elles ne trouveraient plus rien.
+    # doivent attraper. En les déplaçant après, elles ne trouveraient plus rien.
     #
-    # « direction de le service » et « administration de le service » ne sont
-    # pas des noms propres : ce sont des phrases, et une substitution ne peut pas
-    # deviner leur article. Elles sont réécrites ici explicitement, avant la
-    # règle générale, parce qu'elles contiennent encore la forme d'origine.
-    ('direction de le service de restauration', 'direction de bord'),
-    ('le site de le service de restauration', 'le service de bord'),
-    ('de le service de restauration', 'de bord'),
-    ('Le premier serveur de le service de restauration', 'Le premier serveur de bord'),
-    ('la méthode de le service de restauration', 'la méthode de la cabine'),
+    # « de la librairie » est le cas général, et il est traité **directement**,
+    # en une passe. La version naïve — « de la librairie » → « de la
+    # restauration » — donnait « la direction de **le** service de
+    # restauration », qu'il fallait rattraper par une seconde passe. Le script
+    # fonctionnait donc seulement en étant lancé deux fois, ce qu'aucun test ne
+    # vérifiait. Le cas général absorbant les trois cas particuliers, il n'y en
+    # a plus besoin, et la table est idempotente.
+    # Les trois phrases complètes **avant** le cas général : « le site de la
+    # librairie » contient « de la librairie », et la règle générale le
+    # transformerait en « le site de bord » — grammaticalement correct, mais on
+    # perd le mot « service », qui est le sujet de toute l'histoire.
+    ('Le premier serveur de la librairie', 'Le premier serveur de bord'),
+    ('la méthode de la librairie', 'la méthode de la cabine'),
     ('le site de la librairie', 'le service de restauration'),
+    ('de la librairie', 'de bord'),
     ('La librairie Verdi', 'Le service de restauration'),
     ('la librairie Verdi', 'le service de restauration'),
     ('Librairie Verdi', 'Restauration Beluga'),
     ('la librairie', 'le service de restauration'),
     ('La librairie', 'Le service de restauration'),
-    ('de la librairie', 'de la restauration'),
     ('aux libraires', 'de cabine'),
     ('libraires', 'hôtels de cabine'),
     ('commandes des libraires', 'commandes de cabine'),
@@ -117,10 +131,18 @@ INVENTAIRE = [
 
 
 def transformer(texte):
+    """Applique les substitutions, dans l'ordre de la table.
+
+    Un motif de la table peut porter une troisième élément : une expression
+    régulière, utilisée avec frontières de mot. C'est le cas du nom de
+    conteneur `verdi`, qui est une sous-chaîne du mot français « verdict ».
+    """
     for avant, apres in INVENTAIRE:
         texte = texte.replace(avant, apres)
-    for avant, apres in VESTIGES:
-        texte = texte.replace(avant, apres)
+    for regle in VESTIGES:
+        avant, apres = regle[0], regle[1]
+        motif = regle[2] if len(regle) > 2 else None
+        texte = re.sub(motif, apres, texte) if motif else texte.replace(avant, apres)
     return texte
 
 
@@ -175,7 +197,9 @@ def main():
         # script n'a pas su transformer, ou une phrase dont le sens ne tient plus
         # une fois le nom changé.
         for i, ligne in enumerate(apres.split('\n'), 1):
-            if re.search(r'verdi|librair|koplik', ligne, re.I):
+            # Frontières de mot, sinon « verdict » et « library » en français
+            # seraient signalés comme des restes de l'ancienne intrigue.
+            if re.search(r'\bverdi\b|\blibrair\w*\b|\bkoplik\w*\b', ligne, re.I):
                 print(f'    {nom}:{i} à relire : {ligne.strip()[:100]}')
                 restants += 1
 

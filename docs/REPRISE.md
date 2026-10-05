@@ -35,9 +35,10 @@ machine de l'élève**. Le patient est le copilote ; l'outillage est Docker.
 - Le portail ne fait que **valider**. Il ne se connecte jamais au Docker des
   élèves et n'exécute aucune commande à leur place. Tout se tape dans le
   terminal de l'élève, sur sa VM.
-- **7 ateliers** aujourd'hui, un atelier = un bloc de cours. Cible 60 min,
-  borne dure 90. Le huitième est la manœuvre finale, et n'existe pas encore.
-- 27 quêtes aujourd'hui, ~7 h de contenu indicatif. **28 à la v1.0.0.**
+- **7 ateliers de cours**, un atelier = un bloc de cours. Cible 60 min, borne
+  dure 90. Le huitième est la manœuvre finale : une seule quête, qui n'a pas à
+  tenir une heure.
+- **28 quêtes**, ~7 h de contenu indicatif.
 
 **La conséquence de rédaction qui compte** : le fil rouge **n'emporte jamais une
 question de compréhension**. Un élève qui répond « parce qu'il faut garder Beluga
@@ -72,22 +73,22 @@ Le projet est **jouable mais pas terminé**. Ne le présente pas comme fini.
 
 | # | quoi | où | coût |
 |---|---|---|---|
-| 1 | **Écrire l'atelier 8**, la manœuvre finale : la pile complète, la preuve | `content/quests/m8.js` | le gros du travail restant |
-| 2 | **Une sauvegarde** du volume | hors dépôt | petit, à faire avant un vrai cours |
-| 3 | Nettoyer le CSS mort, `inject-fetchhint.js` | `public/style.css`, `scripts/` | cosmétique |
+| 1 | **Une sauvegarde** du volume | hors dépôt | petit, à faire avant un vrai cours |
+| 2 | Nettoyer le CSS mort, `inject-fetchhint.js` | `public/style.css`, `scripts/` | cosmétique |
 
-Les ateliers 1 à 7 racontent le vol de bout en bout. Il reste la manœuvre
-finale, et elle est **le seul atelier qui ne soit pas encore écrit**.
+**Le jeu est complet** : 8 ateliers, 28 quêtes, cohérents de bout en bout. Il
+reste la sauvegarde, qui n'est pas une question de contenu.
 
-**Le seul atelier manquant est le 8.** Les sept autres racontent le vol : leurs
-intros, leurs énoncés, leurs questions et leurs flags ont été basculés de
-l'ancienne intrigue vers celle-ci par `outils/passe-becane.py`.
+**Le jeu est complet.** Les huit ateliers racontent le vol : leurs intros, leurs
+énoncés, leurs questions et leurs flags ont été basculés de l'ancienne intrigue
+vers celle-ci par `outils/passe-becane.py`.
 
-**Écrire le 8.** C'est le dernier morceau, et il est le plus long : une seule
-quête, mais qui doit assembler tout ce que les ateliers 4 à 7 ont construit —
-un réseau privé, deux services qui se trouvent par leur nom, une image
-versionnée, un volume — et le prouver. Elle porte 800 points (m7 finit à 700),
-et comme elle est seule dans son module, elle est forcément sa quête phare.
+**L'atelier 8 est la manœuvre finale** : une seule quête, qui assemble tout ce
+que les ateliers 4 à 7 ont construit et l'exige **prouvé**. Elle porte 800
+points — m7 finit à 700, et un module doit croître — et comme elle est seule
+dans son module, elle est forcément sa quête phare. C'est aussi pour cela que la
+borne des points est passée de 600 à 800 : à 600, l'atelier 8 était **impossible
+à écrire**. Voir § 8.
 
 ### Comment réécrire un atelier
 
@@ -265,7 +266,9 @@ public/
   style.css             une feuille pour les deux écrans
 outils/
   navigateur/           recette dans un vrai Chromium (CDP) — § 10
-  intro-modules.py      réécrit le bloc `meta` des sept ateliers
+  intro-modules.py      réécrit le bloc `meta` des huit ateliers
+  passe-becane.py       bascule le vocabulaire d'une intrigue vers l'autre
+  test-passe-becane.py  vérifie que le script ne corrompt rien
 test/                   217 tests
 docs/
   CONTRACTS.md          source de vérité : schéma de quête + contrat d'API
@@ -274,6 +277,8 @@ docs/
   RELEASE-v0.1.0.md     notes de version
 scripts/
   check-content.js      le contenu est-il chargeable ?
+  # (les deux outils de renommage sont dans `outils/`, avec le contenu :
+  #  ils agissent sur `content/quests/`, pas sur le serveur)
   check-fetchhints.js   REJOUE les commandes de récupération — demande Docker
   nettoie-verif.js      purge les joueurs de vérification
   smoke.js              joue toutes les quêtes, affiche la maîtrise
@@ -454,7 +459,12 @@ démarre pas le matin.
 | 5 | 📄 Certification | Certifier les pièces | `m5-certifier-les-pieces` | 4 |
 | 6 | 💾 Sauvegarde | Sauvegarder les données | `m6-sauvegarder-les-donnees` | 4 |
 | 7 | 📚 Carte de bord | Documenter la carte | `m7-documenter-la-carte` | 3 |
-| 8 | 🛬 Atterrissage | — | `m8-…` | **1, à écrire** |
+| 8 | 🛬 Atterrissage | L'atterrissage | `m8-atterrissage` | 1 |
+
+Le module 8 est le seul à n'avoir qu'une quête : c'est un module d'un seul
+tenant, on ne manœuvre pas d'atterrissage par morceaux. Il porte 800 points,
+et la borne des points du validateur a été remontée à 800 pour cette raison —
+voir § 8.
 
 **Les ateliers 1 à 7 racontent le vol de bout en bout.** Le renommage a été
 fait par `outils/passe-becane.py`, un script, et non à la main — les noms
@@ -522,10 +532,11 @@ l'appliquer.
   plusieurs titres `#`. Le validateur s'applique à la **prose** seulement, pas
   aux blocs de code.
 - Chaque module : un multiple de 100 points, et **une seule** quête phare
-  (points multiples de 100), qui doit être la dernière. La somme croît d'un
-  module à l'autre.
+  (points multiples de 100), qui doit être la dernière. La somme croît **strictement**
+  d'un module à l'autre — le test le verrouille, parce que le validateur
+  n'accepterait qu'une non-décroissance.
 
-Le module 8 devra porter **800 points** : m7 finit à 700.
+Le module 8 porte **800 points** : m7 finit à 700, et la somme doit croître.
 
 ### Le `brief` est la seule source pédagogique
 
@@ -561,7 +572,7 @@ le plus facile à manquer.
 ## 9. Les vérifications
 
 ```bash
-npm test                      # 215 tests — 10 s
+npm test                      # 217 tests — 10 s
 npm run check-content         # le contenu est chargeable
 npm run smoke                 # joue toutes les quêtes (demande un portail)
 npm run check-fetchhints -- <url>   # REJOUE les commandes — demande Docker
@@ -577,7 +588,7 @@ de recette local. Voir § 3.
 
 | job | ce qu'il prouve |
 |---|---|
-| `tests` | les tests, le contenu validable, l'image construite, un conteneur qui démarre et sert |
+| `tests` | les tests, le contenu validable, le script de renommage vérifié, l'image construite, un conteneur qui démarre et sert |
 | `commandes` | les commandes de récupération contre le portail de production — **`main` seulement**, en continu |
 
 Le job `commandes` inscrit un joueur en production et le supprime en sortant ;
@@ -637,7 +648,12 @@ déjà payés. Les quatre qui coûtent le plus cher :
    Sans ça, le script rapporte fidèlement un bug déjà corrigé.
 3. **`Page.captureScreenshot({captureBeyondViewport: true})` ment.** Pour vérifier
    une présence/absence, capturez le **viewport** seul.
-4. **Les coupures de code se repaid par `python3`, jamais par numéro de ligne.**
+4. **Un élément remplacé par `replaceWith` devient un nœud détaché.** Sa
+   référence ne change plus. Une recette qui lit `carte.textContent` dans une
+   boucle lit du vide et conclut n'importe quoi — en l'occurrence, « juste » dès
+   qu'un bouton était désactivé, ce qui est vrai après n'importe quel clic.
+   **Relire l'élément dans le DOM à chaque tour.**
+5. **Les coupures de code se repaid par `python3`, jamais par numéro de ligne.**
    Un appel de fonction non défini est une erreur d'**exécution**, pas de syntaxe :
    `node --check` ne la voit pas. La première coupe a emporté 368 lignes au lieu
    de 302.
@@ -706,8 +722,9 @@ Liste courte des erreurs récurrentes. Chacune a coûté du temps.
    reconsidérer si l'enseignant veut plus de mémorisation.
 6. **`inject-fetchhint.js`** a servi une fois à migrer le contenu. Conservé par
    prudence, sans raison d'être.
-7. **L'atelier 8 n'existe pas.** Pas de manœuvre finale, donc la ligne
-   « Atterrissage » du carnet de bord ne s'allume jamais. Voir § 2.
+7. **La ligne « Atterrissage » du carnet de bord ne s'allume qu'à la fin.**
+   Elle exige les 28 quêtes, pas les 27 de cours : c'est la seule ligne dont
+   l'état n'est pas la somme d'un atelier.
 
 ---
 

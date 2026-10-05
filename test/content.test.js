@@ -112,9 +112,18 @@ test('les six quêtes phares sont bien présentes, au bon endroit', () => {
 
 test('le parcours est progressif : chaque module dépend du précédent', () => {
   const modules = pack.modules.map((m) => m.module);
-  assert.deepEqual(modules, [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(modules, [1, 2, 3, 4, 5, 6, 7, 8]);
   for (const m of pack.modules) {
-    assert.ok(m.quests.length >= 3, `module ${m.module} : seulement ${m.quests.length} quêtes`);
+    // **Sauf le module 8**, qui est la manœuvre finale : une seule quête,
+    // qu'on ne « manœuvre pas » par morceaux. La borne s'applique donc aux
+    // sept ateliers de cours, et le module 8 est vérifié à part — une seule
+    // quête, dernière de son module, et la phare.
+    if (m.module < 8) {
+      assert.ok(m.quests.length >= 3, `module ${m.module} : seulement ${m.quests.length} quêtes`);
+    } else {
+      assert.equal(m.quests.length, 1,
+        'la manœuvre finale tient dans une seule quête');
+    }
     m.quests.forEach((q, i) => assert.equal(q.order, i + 1, `${m.module} : ordre non contigu`));
   }
 });
@@ -186,6 +195,11 @@ test('chaque module récupère son secret par sa propre technique', () => {
     5: /docker\s+(run|build)\b/,           // son conteneur, son image
     6: /docker\s+(volume|run)\b/,          // volume relu par un autre conteneur
     7: /docker\s+compose/,                 // les journaux de la pile
+    // L'atelier 8 est la manœuvre finale : elle récupère son secret comme
+    // l'atelier 7, par les journaux d'un service à usage unique. C'est
+    // volontaire — le point final porte sur la **preuve**, pas sur une
+    // nouvelle technique de récupération.
+    8: /docker\s+compose/,
   };
   for (const m of pack.modules) {
     for (const q of m.quests) {

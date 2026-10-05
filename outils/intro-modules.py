@@ -178,7 +178,32 @@ Cet atelier écrit cette carte et vous apprend à la piloter. Il ne vous
 apprendra rien de nouveau sur l'outillage ; c'est le but. Un outil qu'on ne sait
 pas piloter est un outil qu'on utilise de travers.
 """,
+    ),    dict(
+        n=8, slug='m8-atterrissage', icon='\U0001f6ec',
+        title="L'atterrissage",
+        tagline="Assembler la pile, et exiger la preuve que tout le monde répond",
+        story="""# Avant d'atterrir, il faut que tout le monde le dise
+
+Le vol Beluga descend. Il reste quatre mille pieds, et une chose manque encore :
+**la preuve**.
+
+Le capitaine ne décidera pas d'atterrir parce que ça a l'air d'aller. Il lui
+faut que chaque système se présente, qu'il réponde, et que quelqu'un **ait
+vérifié**. Le travail des sept ateliers précédents a produit tout ce qu'il faut
+pour cette vérification — un réseau où les services se trouvent par leur nom, une
+image versionnée, un volume qui survit, un fichier qui décrit la pile. Il n'a
+produit **rien qui dise que la pile est saine**.
+
+C'est le dernier défaut du vol, et il est plus grave qu'il n'en a l'air. Une
+pile où le site est monté avant sa base n'est pas une pile en panne : elle est
+une pile qui *semble* marcher. Le site répondra, la base ne sera pas prête, et
+personne ne le verra tant que rien ne l'appellera.
+
+Cet atelier ne construit presque rien de nouveau. Il assemble, et il exige la
+preuve — y compris quand la preuve est un échec.
+""",
     ),
+
 ]
 
 

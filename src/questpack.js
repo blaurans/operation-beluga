@@ -140,8 +140,20 @@ export async function loadQuestpack({ dir = config.questsDir } = {}) {
 
       req(typeof q.title === 'string' && q.title.length >= 3 && q.title.length <= 60,
         '« title » doit faire 3 à 60 caractères');
-      req(Number.isInteger(q.points) && q.points >= 25 && q.points <= 600,
-        '« points » doit être un entier entre 25 et 600');
+      // La borne haute existe pour attraper un zéro de trop, pas pour
+      // calibrer un barème : `points` est un vestige, plus rien ne le lit.
+      //
+      // Elle vaut le total du plus gros module — donc 800 depuis l'atelier 8,
+      // dont la manœuvre finale est seule dans son fichier et vaut 800. Avant,
+      // elle valait 600, et l'atelier 8 était **impossible à écrire** : un
+      // module doit avoir un total multiple de 100 strictement croissant, m7
+      // finissait à 700, et une seule quête plafonnée à 600 ne pouvait pas
+      // dépasser 700. Le contenu était plus grand que son validateur.
+      //
+      // Ne pas la redescendre sans vérifier la même chose : c'est le genre de
+      // borne qui paraît Arbitraire jusqu'à ce qu'un atelier la bute.
+      req(Number.isInteger(q.points) && q.points >= 25 && q.points <= 800,
+        '« points » doit être un entier entre 25 et 800');
       req(q.points % 25 === 0, '« points » doit être un multiple de 25');
       req(typeof q.estMinutes === 'number' && q.estMinutes >= 2 && q.estMinutes <= 25,
         '« estMinutes » doit être entre 2 et 25');

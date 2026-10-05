@@ -16,7 +16,7 @@ try {
 const opts = pack ? {} : { skip: `contenu indisponible : ${loadError?.message?.split('\n')[0] ?? 'inconnu'}` };
 
 test('le contenu se charge et respecte les invariants', opts, () => {
-  assert.equal(pack.modules.length, 7, 'sept modules, comme décidé');
+  assert.equal(pack.modules.length, 8, 'huit modules : sept ateliers et la manœuvre finale');
   assert.ok(pack.totalQuests >= 20, `au moins 20 quêtes (trouvé ${pack.totalQuests})`);
   assert.ok(pack.totalPoints > 0);
 });

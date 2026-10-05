@@ -87,7 +87,7 @@ pas lui faire croire le contraire. Les QCM portent sur le mécanisme, toujours.
 | `id` | string | kebab-case unique dans tout le jeu, ex. `m1-01-diagnostiquer` |
 | `order` | number | entier ≥ 1, unique **par module**, trié croissant |
 | `title` | string | 3 à 60 caractères |
-| `points` | number | entier 25 → 600. Voir § 1.4 — vestige, plus lu |
+| `points` | number | entier 25 → 800. Voir § 1.4 — vestige, plus lu |
 | `flag` | string | `FLAG{...}` en MAJUSCULES, `A-Z0-9_` à l'intérieur. **Unique dans tout le jeu** |
 | `estMinutes` | number | entier 2 → 25, temps *indicatif* pedagogique |
 | `brief` | string | Markdown. La mission à réaliser. Voir § 1.1 |

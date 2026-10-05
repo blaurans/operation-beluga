@@ -42,6 +42,14 @@ jobs:
       - name: Valider le contenu des quêtes
         run: npm run check-content
 
+      # Le script de renommage du contenu, vérifié sur lui-même. Il a corrompu
+      # du texte trois fois avant d'être correct, en transformant des mots sans
+      # rapport avec l'ancienne intrigue (« verdict » → « cabinect »). Un script
+      # de migration sans test est un script dont on ne peut pas vérifier
+      # qu'il a fini sa tâche.
+      - name: Vérifier le script de renommage
+        run: python3 outils/test-passe-becane.py
+
       - name: Construire l'image
         run: docker build -t operation-beluga:ci .
 

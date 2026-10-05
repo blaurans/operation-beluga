@@ -166,21 +166,52 @@ for (const n of quetes) {
   ligne(`quête ${n} · indice`, cout.slice(0, 90));
   if (n === quetes[0]) await capture(`q${n}-indices`);
 
-  // Répondre juste à toutes les questions : le serveur a le contenu, le
-  // pilote aussi. On lit la bonne réponse par l'API du secret — non, on
-  // triche : on demande la correction de chaque question via le serveur en
-  // essaie chaque choix jusqu'à « juste ». C'est ce que ferait un élève.
+  // Répondre juste à toutes les questions, en essayant chaque choix comme le
+  // ferait un élève. On ne lit pas la bonne réponse par l'API : on clique.
+  //
+  // **Chaque carte est relue dans le DOM à chaque tour.** C'est la seule façon
+  // de voir la réponse du serveur : après un clic, le client désactive les
+  // boutons puis remplace la carte (`box.replaceWith(...)`), donc la référence
+  // gardée en mémoire pointe sur un nœud **détaché**, dont le texte ne change
+  // plus jamais.
+  //
+  // La version précédente lisait ce nœud détaché et concluait « juste » dès
+  // qu'un bouton était désactivé — ce qui est vrai après *n'importe* quel clic.
+  // Elle annonçait donc « 3/3 répondues » quelle que soit la réalité, et la
+  // recette ne vérifiait plus rien. C'est exactement le piège que
+  // docs/REPRISE.md § 11 énonce : ne pas conclure qu'un bouton fonctionne parce
+  // que le handler est correct. Ici, c'est l'inverse — la recette croyait que
+  // l'élève avait juste parce que le bouton était mort.
   const reussies = await evaluer(`(async () => {
-    const equipes = [...document.querySelectorAll('#questPanel .qcm')]
+    const estJuste = (carte) => /✓ Juste/.test(carte.textContent);
+    const pause = () => new Promise(r => setTimeout(r, 500));
+    const cartes = () => [...document.querySelectorAll('#questPanel .qcm')]
       .filter(c => !c.classList.contains('qcm-recall'));
+    const total = cartes().length;
     let justes = 0;
-    for (const carte of equipes) {
-      for (const b of [...carte.querySelectorAll('.qcm-choice')]) {
-        if (b.disabled) { justes += 1; break; }
-        b.click();
-        await new Promise(r => setTimeout(r, 500));
-        if (/Juste/.test(carte.textContent)) { justes += 1; break; }
+
+    for (let i = 0; i < total; i++) {
+      // Les choix déjà tentés sont mémorisés par leur **rang**, pas par leur
+      // nœud : la carte est remplacée après chaque réponse, donc les nœuds de la
+      // question précédente sont détachés.
+      //
+      // Sans cette mémoire, on retente sans fin le premier choix — le client
+      // réactive tous les boutons tant que la réponse est fausse, et la recette
+      // reclique « Vrai » cinq fois sans jamais essayer « Faux ». C'est
+      // exactement le piège d'une question booléenne.
+      const tents = new Set();
+      for (let essai = 0; essai < 6; essai++) {
+        const carte = cartes()[i];
+        if (!carte || estJuste(carte)) break;
+        const bs = [...carte.querySelectorAll('.qcm-choice')];
+        const rang = bs.findIndex((x, k) => !x.disabled && !tents.has(k));
+        if (rang < 0) break;     // tous les choix ont été tentés, et c'est faux
+        tents.add(rang);
+        bs[rang].click();
+        await pause();
       }
+      const carte = cartes()[i];
+      if (carte && estJuste(carte)) justes += 1;
     }
     return justes;
   })()`);
@@ -236,7 +267,7 @@ await evaluer(`[...document.querySelectorAll('#questMap .qitem')].find(q => q.cl
 await attendre(1200);
 ligne('après rechargement', await evaluer(`(() => {
   const c = document.querySelector('#questPanel .qcm');
-  return c ? (/Juste/.test(c.textContent) ? 'réponse relue (Juste)' : 'RIEN DANS LA BASE')
+  return c ? (/✓ Juste/.test(c.textContent) ? 'réponse relue (Juste)' : 'RIEN DANS LA BASE')
            : 'aucun QCM rendu';
 })()`));
 ligne('historique', (await evaluer(

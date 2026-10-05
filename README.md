@@ -25,7 +25,7 @@ Le portail ne fait que **valider**. Il ne se connecte jamais au Docker des
 élèves et n'exécute aucune commande à leur place. Tout se tape dans le terminal
 de l'élève, sur sa machine.
 
-**7 ateliers, 28 quêtes, ~7 h de contenu indicatif.** Chaque atelier est un
+**8 ateliers, 28 quêtes, ~7 h de contenu indicatif.** Chaque atelier est un
 **système de l'avion** qu'on remet en état :
 
 | # | système de l'avion | atelier | quêtes | ce qu'on y fait |
@@ -37,7 +37,7 @@ de l'élève, sur sa machine.
 | 5 | 📄 **Certification** | Certifier les pièces | 4 | `commit` et Dockerfile, CMD/ENTRYPOINT, l'image reproductible |
 | 6 | 💾 **Sauvegarde** | Sauvegarder les données | 4 | ce qui doit survivre à la mort du conteneur |
 | 7 | 📚 **Carte de bord** | Documenter la carte | 3 | toute la pile dans un fichier, puis la piloter |
-| 8 | 🛬 **Atterrissage** | La manœuvre finale | 1 | la pile complète, assemblée et prouvée |
+| 8 | 🛬 **Atterrissage** | L'atterrissage | 1 | la pile complète, assemblée **et prouvée** |
 
 **Chaque atelier est introduit par son `meta.story`**, cette introduction
 narrative qui est la seule donnée du fil rouge : le reste du récit est porté
@@ -188,7 +188,9 @@ système d'avion est l'objet du travail :
 5. **Certifier les pièces** — ça marche, mais personne ne sait le refaire. On écrit la certification qui rend la pièce reproductible.
 6. **Sauvegarder les données** — le service de bord plante et ne sait plus rien. On sépare ce qui survit de ce qui meurt.
 7. **Documenter la carte** — tout fonctionne, et c'est écrit nulle part. On écrit la carte, et on apprend à la piloter.
-8. **L'atterrissage** — la pile complète, assemblée et prouvée.
+8. **L'atterrissage** — la pile complète, assemblée, et **prouvée**. On ajoute
+   un contrôle de vol au fichier, on le fait échouer en cassant la pile, puis on
+   le relève. Un test qui n'a jamais échoué n'a pas été exécuté.
 
 Le geste technique est celui d'`Atelier Docker`, à une exception près : le
 récit est **entièrement porté par les énoncés**, et jamais par les questions de

@@ -393,8 +393,10 @@ test('le parcours se construit depuis les données du serveur', async () => {
   assert.equal(text('#sinceTag'), 'inscrit à 14:02:11');
   assert.match($('#modeChip').textContent, /Turbulence/);
 
-  // Le plan liste les 7 modules et leurs missions.
-  assert.equal($$('#questMap .map-mod').length, 7);
+  // Le plan liste les 8 modules et leurs missions. Le nombre est lu dans le
+  // contenu plutôt qu'écrit : c'est le test de `format.test.js` qui garantit
+  // qu'il y en a bien huit.
+  assert.equal($$('#questMap .map-mod').length, pack.modules.length);
   assert.equal($$('#questMap .qitem').length, pack.totalQuests);
 
   // Le carnet de bord est au-dessus du plan, et il porte une ligne par module

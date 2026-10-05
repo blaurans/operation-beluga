@@ -510,7 +510,7 @@ docker compose up journal; docker compose logs journal; docker compose down`,
       brief: `# Récupérer une pile entière
 
 Dernier jalon du vol. L'administrateur part en vacances, et la machine du
-le service de restauration **meurt** : disque mort, ou réinstallation complète.
+service de restauration **meurt** : disque mort, ou réinstallation complète.
 
 Il ne garde qu'une chose : les deux fichiers texte. Tout le reste — la base, le
 site, le réseau, les conteneurs — disparaît avec la machine.

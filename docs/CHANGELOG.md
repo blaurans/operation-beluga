@@ -230,6 +230,101 @@ distinction, il échouait sur la première question réseau — et il aurait ét
 
 ---
 
+## [0.3.0] — 2026-10-05
+
+**L'atelier 8 — la manœuvre finale.** Le jeu est complet : 8 ateliers, 28
+quêtes, et un fil rouge cohérent du diagnostic à l'atterrissage.
+
+### Ce qu'est l'atelier 8
+
+Il ne construit presque rien de neuf. Il **assemble**, et il exige la preuve.
+
+C'est le point de conception du projet, et il mérite d'être dit : l'atelier 7
+dit explicitement que `depends_on` décrit un **ordre de démarrage**, et pas une
+disponibilité. C'est vrai, et c'est le dernier défaut du vol. L'atelier 8 le
+ferme avec deux notions employées ensemble :
+
+- un **`healthcheck`** — le service dit lui-même s'il est prêt ;
+- **`condition: service_healthy`** — le service dépendant attend ce verdict, au
+  lieu d'attendre que le conteneur existe ;
+- et **`profiles`**, qui permet d'avoir dans le **même** fichier un contrôle de
+  vol qui ne démarre jamais avec la pile.
+
+Une pile où le site est monté avant sa base n'est pas une pile en panne : c'est
+une pile qui *semble* marcher. Le site répondra, la base ne sera pas prête, et
+personne ne le verra tant que rien ne l'appellera.
+
+### La preuve est négative
+
+L'énoncé demande de faire tomber la pile, de voir le contrôle le dire, puis de
+le relever. C'est le parti pris central de l'atelier : **faire tourner la pile ne
+prouve rien** — ça ne prouve rien de plus que les sept ateliers précédents. Un
+test qui n'a jamais échoué n'a pas été exécuté.
+
+La question de compréhension porte sur le **code de sortie**, pas sur la ligne
+affichée : un contrôle qui réussit pendant la panne ne contrôle rien.
+
+### La borne des points passe de 600 à 800
+
+`points` est un vestige, plus rien ne le lit. Mais la borne haute à 600 rendait
+**l'atelier 8 impossible à écrire** : un module doit avoir un total multiple de
+100 strictement croissant, m7 finissait à 700, et une quête unique plafonnée à
+600 ne pouvait pas le dépasser.
+
+C'est le genre de borne qui paraît arbitraire jusqu'à ce qu'un atelier la bute.
+Le commentaire dans le validateur dit maintenant pourquoi elle vaut 800, et quoi
+vérifier avant de la redescendre.
+
+### Un test qui ne vérifiait rien
+
+`outils/navigateur/verifie-jeu.mjs` annonçait « 3/3 répondues » **quelle que soit
+la réalité**. Deux défauts successifs, tous deux dans la boucle qui répond aux
+questions de compréhension :
+
+1. Elle lisait le texte d'un nœud **détaché**. Après un clic, le client
+   remplace la carte, donc la référence gardée en mémoire ne changeait plus
+   jamais. La recette concluait « juste » dès qu'un bouton était désactivé —
+   ce qui est vrai après n'importe quel clic.
+2. Une fois la lecture corrigée, elle retombait sur le **premier** bouton à
+   chaque tour, et cliquait « Vrai » cinq fois sans jamais essayer « Faux ». Le
+   client réactive tous les boutons tant que la réponse est fausse, il fallait
+   donc mémoriser les choix déjà tentés.
+
+La recette prouvait donc **moins qu'elle ne le semblait, pendant toute la
+construction de la v0.2.0**. C'est le piège énoncé dans `docs/REPRISE.md` § 11,
+mais à l'envers : elle croyait que l'élève avait juste parce que le bouton était
+mort. Le server et la recette sont maintenant d'accord, et la recette distingue
+« répondu » de « juste ».
+
+### Le script de renommage, testé
+
+`passe-becane.py` avait corrompu **« verdict » en « cabinect »** : le nom de
+conteneur `verdi` est une sous-chaîne du mot français, et la substitution n'avait
+pas de frontière de mot. Il ne signalait rien — `--verifier` annonçait un
+contenu propre.
+
+Il avait aussi une seconde fragilité : il ne fonctionnait qu'en étant lancé
+**deux fois**, parce qu'une règle rattrapait un état intermédiaire du texte
+(« de le service de restauration »). Le cas général absorbe désormais les cas
+particuliers, et le script est **idempotent**.
+
+`outils/test-passe-becane.py` verrouille les douze cas, dont les trois pièges. Il
+tourne dans la CI : un script de migration sans test est un script dont on ne
+peut pas vérifier qu'il a fini sa tâche.
+
+### Deux tests de contenu refusent la faute
+
+- une question de compréhension de l'atelier 8 citait le verdict d'atterrissage,
+  et **le test l'a refusée** : le fil rouge ne porte jamais une question, sinon
+  un élève y répond par intuition et n'a rien appris du Docker ;
+- l'énoncé d'un test vérifiait encore « 7 modules » en dur, et un autre
+  attendait `0/27`. Le total vient maintenant du contenu, ce qui est le seul
+  moyen que ces tests survivent à l'ajout d'un atelier.
+
+217 tests, plus la vérification du script de renommage.
+
+---
+
 ## [1.0.0] — à venir
 
 Le gel. Il conditionne : l'atelier 8 écrit et validé par `check-fetchhints` —
