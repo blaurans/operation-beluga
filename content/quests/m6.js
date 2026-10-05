@@ -1,7 +1,7 @@
 // Atelier 6 — Ne rien perdre
 //
-// Le jalon du chantier de la librairie : sa base de données tient les commandes
-// des libraires. L'atelier 4 l'a posée dans un conteneur, et constaté que la
+// Le jalon du vol, côté données : la base tient les commandes
+// des hôtels de cabine. L'atelier 4 l'a posée dans un conteneur, et constaté que la
 // base est un point de défaillance unique. Cet atelier répond à la question
 // suivante : que se passe-t-il quand ce conteneur disparaît ?
 //
@@ -53,13 +53,13 @@ parce qu'il est solide. Il survit parce que **ce qui compte est ailleurs**.
       estMinutes: 12,
       brief: `# Tout disparaît
 
-La base de la librairie tourne depuis l'atelier 4. L'administrateur y enregistre
+La base de bord tourne depuis l'atelier 4. L'administrateur y enregistre
 des commandes. Puis il veut tester une mise à jour, et il fait ce qu'on fait
 toujours :
 
 \`\`\`bash
-docker rm -f verdi-db
-docker run -d --name verdi-db --network reseau-verdi redis:alpine
+docker rm -f cabine-db
+docker run -d --name cabine-db --network reseau-cabine redis:alpine
 \`\`\`
 
 Largement banal, et c'est le problème. **Toutes les commandes sont parties.**
@@ -69,48 +69,48 @@ Largement banal, et c'est le problème. **Toutes les commandes sont parties.**
 1. Prépare le terrain : un réseau, et une base qui répond :
 
 \`\`\`bash
-docker network create reseau-verdi 2>/dev/null || true
-docker run -d --name verdi-db --network reseau-verdi redis:alpine
+docker network create reseau-cabine 2>/dev/null || true
+docker run -d --name cabine-db --network reseau-cabine redis:alpine
 \`\`\`
 
 2. Vérifie que la base répond. \`redis-cli\` est dans l'image \`redis\` lui-même, on
    lance donc un deuxième conteneur **sur le même réseau** pour lui parler :
 
 \`\`\`bash
-docker run --rm --network reseau-verdi redis:alpine redis-cli -h verdi-db ping
+docker run --rm --network reseau-cabine redis:alpine redis-cli -h cabine-db ping
 \`\`\`
 
 La réponse doit être \`PONG\`.
 
-3. Écris quelque chose qu'on ne pourra pas refaire : le stock de la librairie au
+3. Écris quelque chose qu'on ne pourra pas refaire : le stock de bord au
    30 septembre.
 
 \`\`\`bash
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db SET stock_septembre "1284 romans, 96 Bedford, 12 Aragon"
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db SET stock_septembre "1284 plateaux, 96 régime sans gluten, 12 végétarien"
 \`\`\`
 
 4. Relis, pour vérifier que l'écriture a pris :
 
 \`\`\`bash
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db GET stock_septembre
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db GET stock_septembre
 \`\`\`
 
 5. **La catastrophe.** Recrée la base, comme l'administrateur l'a fait :
 
 \`\`\`bash
-docker rm -f verdi-db
-docker run -d --name verdi-db --network reseau-verdi redis:alpine
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db GET stock_septembre
+docker rm -f cabine-db
+docker run -d --name cabine-db --network reseau-cabine redis:alpine
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db GET stock_septembre
 \`\`\`
 
 6. Reprends l'inventaire. Cette fois, regarde **où** était la donnée :
 
 \`\`\`bash
 docker run --rm redis:alpine sh -c 'ls -la /data'
-docker exec verdi-db sh -c 'ls -la /data'
+docker exec cabine-db sh -c 'ls -la /data'
 \`\`\`
 
 **Ce que tu observes**
@@ -130,11 +130,11 @@ repart toujours de l'image, jamais d'un état précédent.
 Le reversement est évident, et c'est le sujet de cet atelier : **un conteneur ne
 doit pas porter de données**. Il porte un service. Les données vivent ailleurs.
 
-**Ce que ça change pour la librairie**
+**Ce que ça change pour le service de restauration**
 
-Le stock du 30 septembre est perdu. Il faudra le ressaisir. C'est le coût réel de
-la migration, et il vaut mieux l'apprendre sur une base de test que le jour de la
-mise en production.
+Le stock du 30 septembre est perdu. Il faudra le ressaisir. C'est le coût réel
+d'un service mal posé, et il vaut mieux l'apprendre sur une base de test que le
+jour de la mise en service.
 
 **Ton mot de passe**
 
@@ -144,7 +144,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-01-tout-dispar
 \`\`\``,
       hints: [
         "Redis ne répond pas par une erreur quand une clé n'existe pas : il répond avec une chaîne vide. C'est pour ça que la perte passe inaperçue.",
-        "`redis-cli -h verdi-db` parle **depuis un autre conteneur**. Sans `--network reseau-verdi`, il ne trouve pas la base.",
+        "`redis-cli -h cabine-db` parle **depuis un autre conteneur**. Sans `--network reseau-cabine`, il ne trouve pas la base.",
         "Le dossier `/data` est celui où Redis écrit. Un conteneur neuf repart de l'image, donc `/data` est recréé vide.",
       ],
       charge: { perHint: 1, autonomy: [1, 1, 0] },
@@ -173,30 +173,30 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-01-tout-dispar
         },
       ],
       solution: `\`\`\`bash
-docker network create reseau-verdi 2>/dev/null || true
-docker run -d --name verdi-db --network reseau-verdi redis:alpine
+docker network create reseau-cabine 2>/dev/null || true
+docker run -d --name cabine-db --network reseau-cabine redis:alpine
 
-docker run --rm --network reseau-verdi redis:alpine redis-cli -h verdi-db ping
+docker run --rm --network reseau-cabine redis:alpine redis-cli -h cabine-db ping
 # -> PONG
 
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db SET stock_septembre "1284 romans, 96 Bedford, 12 Aragon"
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db SET stock_septembre "1284 plateaux, 96 régime sans gluten, 12 végétarien"
 # -> OK
 
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db GET stock_septembre
-# -> "1284 romans, 96 Bedford, 12 Aragon"
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db GET stock_septembre
+# -> "1284 plateaux, 96 régime sans gluten, 12 végétarien"
 
-docker rm -f verdi-db
-docker run -d --name verdi-db --network reseau-verdi redis:alpine
+docker rm -f cabine-db
+docker run -d --name cabine-db --network reseau-cabine redis:alpine
 
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db GET stock_septembre
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db GET stock_septembre
 # -> ""            (chaîne vide, pas une erreur : la donnée est perdue)
 
 docker run --rm redis:alpine sh -c 'ls -la /data'
 # -> (vide : image fraîche)
-docker exec verdi-db sh -c 'ls -la /data'
+docker exec cabine-db sh -c 'ls -la /data'
 # -> (vide : le conteneur neuf n'a jamais vu les données)
 \`\`\``,
       teaches: ['système de fichiers éphémère', 'docker rm', 'docker exec', 'perte de données'],
@@ -224,9 +224,9 @@ la première des deux solutions.
    conteneur :
 
 \`\`\`bash
-docker rm -f verdi-db 2>/dev/null
-mkdir -p ~/verdi-donnees
-ls -la ~/verdi-donnees
+docker rm -f cabine-db 2>/dev/null
+mkdir -p ~/cabine-donnees
+ls -la ~/cabine-donnees
 \`\`\`
 
 Il est vide. Ce vide est important : on va y voir apparaître des fichiers qui
@@ -236,40 +236,40 @@ n'ont pas été créés par un programme de la machine.
    \`-v\` prend la **source** puis la **destination** :
 
 \`\`\`bash
-docker run -d --name verdi-db --network reseau-verdi \\
-  -v ~/verdi-donnees:/data \\
+docker run -d --name cabine-db --network reseau-cabine \\
+  -v ~/cabine-donnees:/data \\
   redis:alpine
 \`\`\`
 
 3. Écris, comme à la quête précédente :
 
 \`\`\`bash
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db SET stock_septembre "1284 romans, 96 Bedford, 12 Aragon"
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db SET stock_septembre "1284 plateaux, 96 régime sans gluten, 12 végétarien"
 \`\`\`
 
 4. **Regarde la machine, pas le conteneur.** Le dossier doit contenir un fichier
    que rien n'a créé sur cette machine :
 
 \`\`\`bash
-ls -la ~/verdi-donnees
+ls -la ~/cabine-donnees
 \`\`\`
 
 5. Teste la continuité. Détruis le conteneur, recrée-le **exactement pareil**,
    et relis :
 
 \`\`\`bash
-docker rm -f verdi-db
-docker run -d --name verdi-db --network reseau-verdi \\
-  -v ~/verdi-donnees:/data \\
+docker rm -f cabine-db
+docker run -d --name cabine-db --network reseau-cabine \\
+  -v ~/cabine-donnees:/data \\
   redis:alpine
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db GET stock_septembre
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db GET stock_septembre
 \`\`\`
 
 **Ce que tu observes**
 
-- Étape 4 : des fichiers apparaissent dans \`~/verdi-donnees\`. Ils ont été écrits
+- Étape 4 : des fichiers apparaissent dans \`~/cabine-donnees\`. Ils ont été écrits
   par un processus du conteneur, dans le système de fichiers de la machine.
 - Étape 5 : la donnée est **revenue**. Le conteneur a disparu, son contenu non.
 
@@ -293,7 +293,7 @@ le voit immédiatement. Et l'inverse.
 
 Le montage est la solution quand les données doivent être **lisibles par la
 machine** : un fichier de configuration, une base qu'on veut sauvegarder avec ses
-propres outils. C'est le choix de l'administration de la librairie.
+propres outils. C'est le choix de l'administration de bord.
 
 **Ton mot de passe**
 
@@ -303,7 +303,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-02-le-dossier-
 \`\`\``,
       hints: [
         "`-v source:destination`, la source en premier. La source est un chemin de la **machine** ; la destination est un chemin **dans le conteneur**.",
-        "`ls -la ~/verdi-donnees` se lance depuis ta machine, pas depuis le conteneur. C'est tout l'intérêt du montage : les deux voient le même dossier.",
+        "`ls -la ~/cabine-donnees` se lance depuis ta machine, pas depuis le conteneur. C'est tout l'intérêt du montage : les deux voient le même dossier.",
         "Si les données ne reviennent pas à l'étape 5, vérifie que la source est **identique** au recréer. Un chemin différent, un autre dossier, donc une autre base vide.",
       ],
       charge: { perHint: 1, autonomy: [1, 1, 0] },
@@ -338,32 +338,32 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-02-le-dossier-
         },
       ],
       solution: `\`\`\`bash
-docker rm -f verdi-db
-mkdir -p ~/verdi-donnees
-ls -la ~/verdi-donnees
+docker rm -f cabine-db
+mkdir -p ~/cabine-donnees
+ls -la ~/cabine-donnees
 # -> total 8     (vide)
 
-docker run -d --name verdi-db --network reseau-verdi \\
-  -v ~/verdi-donnees:/data redis:alpine
+docker run -d --name cabine-db --network reseau-cabine \\
+  -v ~/cabine-donnees:/data redis:alpine
 
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db SET stock_septembre "1284 romans, 96 Bedford, 12 Aragon"
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db SET stock_septembre "1284 plateaux, 96 régime sans gluten, 12 végétarien"
 # -> OK
 
-ls -la ~/verdi-donnees
+ls -la ~/cabine-donnees
 # -> total 12
 # -> drwxr-xr-x 2 root root 4096 … .
 # -> -rw-r--r-- 1 root root  205 … dump.rdb   <- écrit par le conteneur !
 
-docker rm -f verdi-db
-docker run -d --name verdi-db --network reseau-verdi \\
-  -v ~/verdi-donnees:/data redis:alpine
+docker rm -f cabine-db
+docker run -d --name cabine-db --network reseau-cabine \\
+  -v ~/cabine-donnees:/data redis:alpine
 
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db GET stock_septembre
-# -> "1284 romans, 96 Bedford, 12 Aragon"   (revenu)
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db GET stock_septembre
+# -> "1284 plateaux, 96 régime sans gluten, 12 végétarien"   (revenu)
 
-docker rm -f verdi-db
+docker rm -f cabine-db
 \`\`\`
 
 Note les permissions : \`root root\`. Redis tourne en root dans son conteneur, et
@@ -384,7 +384,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-02-le-dossier-
       estMinutes: 15,
       brief: `# Qui écrit ces fichiers ?
 
-À la quête précédente, la base a écrit dans \`~/verdi-donnees\` un fichier qui
+À la quête précédente, la base a écrit dans \`~/cabine-donnees\` un fichier qui
 appartient à **root**. L'administrateur ne peut plus l'ouvrir, ni le sauvegarder
 avec ses outils. Sur une machine de TP, ça devient vite un mur : le fichier est
 là, et on n'y touche plus.
@@ -395,8 +395,8 @@ là, et on n'y touche plus.
    pas, parce que le dossier est déjà à root :
 
 \`\`\`bash
-ls -la ~/verdi-donnees
-touch ~/verdi-donnees/essai
+ls -la ~/cabine-donnees
+touch ~/cabine-donnees/essai
 \`\`\`
 
 La commande échoue. **Lis bien le message** : il dit qui possède le dossier, et
@@ -411,19 +411,19 @@ ce que tu devrais faire.
    seule option, à la création :
 
 \`\`\`bash
-docker rm -f verdi-db
-docker run -d --name verdi-db --network reseau-verdi \\
+docker rm -f cabine-db
+docker run -d --name cabine-db --network reseau-cabine \\
   --user 1000:1000 \\
-  -v ~/verdi-donnees:/data \\
+  -v ~/cabine-donnees:/data \\
   redis:alpine
 \`\`\`
 
 3. Recrée les données et regarde **qui** possède maintenant les fichiers :
 
 \`\`\`bash
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db SET stock_octobre "1190 romans, 88 Sollers, 14 Blasis"
-ls -la ~/verdi-donnees
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db SET stock_octobre "1190 romans, 88 Sollers, 14 Blasis"
+ls -la ~/cabine-donnees
 \`\`\`
 
 Le propriétaire n'est plus root.
@@ -431,7 +431,7 @@ Le propriétaire n'est plus root.
 4. Vérifie de l'intérieur du conteneur que tout est cohérent :
 
 \`\`\`bash
-docker exec verdi-db id
+docker exec cabine-db id
 \`\`\`
 
 **Ce que tu observes**
@@ -472,7 +472,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-03-qui-ecrit-c
       hints: [
         "L'utilisateur courant se lit simplement : `id -u` sur la machine. C'est ce nombre qu'il faut passer à `--user`.",
         "`--user` prend deux nombres séparés par deux-points : `uid:gid`. Le premier suffit souvent, le second évite des surprises sur les groupes.",
-        "`docker exec verdi-db id` affiche l'identité **du conteneur**. Si elle est `uid=0`, le conteneur est root — et c'est ce que tu voulais éviter.",
+        "`docker exec cabine-db id` affiche l'identité **du conteneur**. Si elle est `uid=0`, le conteneur est root — et c'est ce que tu voulais éviter.",
       ],
       charge: { perHint: 1, autonomy: [1, 1, 0] },
       check: [
@@ -500,35 +500,35 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-03-qui-ecrit-c
         },
       ],
       solution: `\`\`\`bash
-ls -la ~/verdi-donnees
+ls -la ~/cabine-donnees
 # -> -rw-r--r-- 1 root root  205 … dump.rdb
 
-touch ~/verdi-donnees/essai
-# -> touch: cannot touch '/home/dieu/verdi-donnees/essai': Permission denied
+touch ~/cabine-donnees/essai
+# -> touch: cannot touch '/home/dieu/cabine-donnees/essai': Permission denied
 
 id -u
 # -> 1000
 
-docker rm -f verdi-db
-docker run -d --name verdi-db --network reseau-verdi \\
+docker rm -f cabine-db
+docker run -d --name cabine-db --network reseau-cabine \\
   --user 1000:1000 \\
-  -v ~/verdi-donnees:/data \\
+  -v ~/cabine-donnees:/data \\
   redis:alpine
 
-docker run --rm --network reseau-verdi redis:alpine \\
-  redis-cli -h verdi-db SET stock_octobre "1190 romans, 88 Sollers, 14 Blasis"
+docker run --rm --network reseau-cabine redis:alpine \\
+  redis-cli -h cabine-db SET stock_octobre "1190 romans, 88 Sollers, 14 Blasis"
 # -> OK
 
-ls -la ~/verdi-donnees
+ls -la ~/cabine-donnees
 # -> -rw-r--r-- 1 dieudieu dieudieu 205 … dump.rdb   <- à toi
 
-touch ~/verdi-donnees/essai
+touch ~/cabine-donnees/essai
 # -> (ça marche)
 
-docker exec verdi-db id
+docker exec cabine-db id
 # -> uid=1000(dieu) gid=1000(dieu) groups=1000(dieu)
 
-docker rm -f verdi-db
+docker rm -f cabine-db
 \`\`\``,
       teaches: ['option --user', 'uid', 'gid', 'problème de permissions', 'chown insuffisant'],
       fetchHint: `export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
@@ -541,7 +541,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-03-qui-ecrit-c
       order: 4,
       title: 'Le volume de Docker',
       points: 500,
-      flag: 'FLAG{VERDI_VOLUME_NAMED_DURABLE_AND_LISTED}',
+      flag: 'FLAG{CABINE_VOLUME_NAMED_DURABLE_AND_LISTED}',
       estMinutes: 20,
       brief: `# Le volume de Docker
 
@@ -557,28 +557,28 @@ C'est la deuxième solution, et la dernière du chantier.
 1. Compare les deux commandes. Même image, même réseau, deux_stockages :
 
 \`\`\`bash
-docker rm -f verdi-db
+docker rm -f cabine-db
 
 # Version « dossier », qui a posé problème
-docker run -d --name test-dossier --network reseau-verdi \\
-  --user 1000:1000 -v ~/verdi-donnees:/data redis:alpine
+docker run -d --name test-dossier --network reseau-cabine \\
+  --user 1000:1000 -v ~/cabine-donnees:/data redis:alpine
 
 # Version « volume », que Docker gère
-docker run -d --name test-volume --network reseau-verdi \\
-  -v donnees-verdi:/data redis:alpine
+docker run -d --name test-volume --network reseau-cabine \\
+  -v donnees-cabine:/data redis:alpine
 \`\`\`
 
-Le volume \`donnees-verdi\` **n'existe pas encore** : Docker le crée au premier
+Le volume \`donnees-cabine\` **n'existe pas encore** : Docker le crée au premier
 montage.
 
 2. Remplis les deux, et regarde où ils ont atterri :
 
 \`\`\`bash
-docker run --rm --network reseau-verdi redis:alpine redis-cli -h test-dossier SET cle "valeur"
-docker run --rm --network reseau-verdi redis:alpine redis-cli -h test-volume SET cle "valeur"
+docker run --rm --network reseau-cabine redis:alpine redis-cli -h test-dossier SET cle "valeur"
+docker run --rm --network reseau-cabine redis:alpine redis-cli -h test-volume SET cle "valeur"
 
 docker volume ls
-docker volume inspect donnees-verdi --format '{{.Mountpoint}}'
+docker volume inspect donnees-cabine --format '{{.Mountpoint}}'
 \`\`\`
 
 3. **La différence que l'administrateur voulait.** Le volume est un objet à part,
@@ -586,16 +586,16 @@ docker volume inspect donnees-verdi --format '{{.Mountpoint}}'
 
 \`\`\`bash
 docker volume ls
-docker volume inspect donnees-verdi
+docker volume inspect donnees-cabine
 \`\`\`
 
 4. Teste la continuité du volume, et la disparition du conteneur :
 
 \`\`\`bash
 docker rm -f test-volume
-docker run -d --name test-volume --network reseau-verdi \\
-  -v donnees-verdi:/data redis:alpine
-docker run --rm --network reseau-verdi redis:alpine \\
+docker run -d --name test-volume --network reseau-cabine \\
+  -v donnees-cabine:/data redis:alpine
+docker run --rm --network reseau-cabine redis:alpine \\
   redis-cli -h test-volume GET cle
 \`\`\`
 
@@ -604,10 +604,10 @@ docker run --rm --network reseau-verdi redis:alpine \\
 
 \`\`\`bash
 docker rm -f test-volume
-docker volume rm donnees-verdi
-docker run -d --name test-volume --network reseau-verdi \\
-  -v donnees-verdi:/data redis:alpine
-docker run --rm --network reseau-verdi redis:alpine \\
+docker volume rm donnees-cabine
+docker run -d --name test-volume --network reseau-cabine \\
+  -v donnees-cabine:/data redis:alpine
+docker run --rm --network reseau-cabine redis:alpine \\
   redis-cli -h test-volume GET cle
 \`\`\`
 
@@ -646,7 +646,7 @@ sait pas où il est sur le disque.
 - **Volume nommé** quand on veut que Docker gère, et que personne d'autre ne
   touche au stockage.
 
-La librairie a les deux besoins : les commandes dans un volume, et les fichiers
+Le service de restauration a les deux besoins : les commandes dans un volume, et les fichiers
 de configuration du site dans un dossier monté. C'est courant, et c'est bien.
 
 **Bon à retenir**
@@ -655,7 +655,7 @@ de configuration du site dans un dossier monté. C'est courant, et c'est bien.
 **actuellement montés**. Un conteneur arrêté depuis trois mois, c'est un volume
 « inutilisé ». En TP, on y passe ; en production, jamais sans y avoir pensé.
 
-**Ce que ça change pour la librairie**
+**Ce que ça change pour le service de restauration**
 
 La base tient enfin ses données dans un volume nommé, listable et supervisable.
 Reste la question que l'atelier 4 avait ouverte : ce volume est **un seul point de
@@ -699,7 +699,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-04-le-volume-d
         {
           id: 'm6-04-rm-silencieux',
           kind: 'mcq',
-          prompt: 'Que fait `docker volume rm donnees-verdi` sur un volume utilisé par un conteneur arrêté ?',
+          prompt: 'Que fait `docker volume rm donnees-cabine` sur un volume utilisé par un conteneur arrêté ?',
           choices: [
             'Il supprime le volume et ses données, sans demander confirmation',
             'Il refuse, car le volume est utilisé',
@@ -712,36 +712,36 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m6-04-le-volume-d
         },
       ],
       solution: `\`\`\`bash
-docker rm -f verdi-db
+docker rm -f cabine-db
 
-docker run -d --name test-dossier --network reseau-verdi \\
-  --user 1000:1000 -v ~/verdi-donnees:/data redis:alpine
-docker run -d --name test-volume --network reseau-verdi \\
-  -v donnees-verdi:/data redis:alpine
+docker run -d --name test-dossier --network reseau-cabine \\
+  --user 1000:1000 -v ~/cabine-donnees:/data redis:alpine
+docker run -d --name test-volume --network reseau-cabine \\
+  -v donnees-cabine:/data redis:alpine
 
 docker volume ls
 # -> DRIVER    VOLUME NAME
-# -> local     donnees-verdi
+# -> local     donnees-cabine
 
-docker volume inspect donnees-verdi --format '{{.Mountpoint}}'
-# -> /var/lib/docker/volumes/donnees-verdi/_data
+docker volume inspect donnees-cabine --format '{{.Mountpoint}}'
+# -> /var/lib/docker/volumes/donnees-cabine/_data
 
-docker volume inspect donnees-verdi
-# -> [{ "CreatedAt": …, "Mountpoint": …, "Name": "donnees-verdi", …}]
+docker volume inspect donnees-cabine
+# -> [{ "CreatedAt": …, "Mountpoint": …, "Name": "donnees-cabine", …}]
 
 # Continuité
 docker rm -f test-volume
-docker run -d --name test-volume --network reseau-verdi \\
-  -v donnees-verdi:/data redis:alpine
-docker run --rm --network reseau-verdi redis:alpine redis-cli -h test-volume GET cle
+docker run -d --name test-volume --network reseau-cabine \\
+  -v donnees-cabine:/data redis:alpine
+docker run --rm --network reseau-cabine redis:alpine redis-cli -h test-volume GET cle
 # -> valeur
 
 # Suppression : silencieuse et définitive
 docker rm -f test-volume
-docker volume rm donnees-verdi
-docker run -d --name test-volume --network reseau-verdi \\
-  -v donnees-verdi:/data redis:alpine
-docker run --rm --network reseau-verdi redis:alpine redis-cli -h test-volume GET cle
+docker volume rm donnees-cabine
+docker run -d --name test-volume --network reseau-cabine \\
+  -v donnees-cabine:/data redis:alpine
+docker run --rm --network reseau-cabine redis:alpine redis-cli -h test-volume GET cle
 # -> ""       (volume recréé vide)
 
 docker rm -f test-volume test-dossier

@@ -11,22 +11,89 @@ import { quests } from '../src/questpack.js';
 const pack = quests();
 const all = pack.quests;
 
+test('le contenu ne parle plus de l\'ancienne intrigue', () => {
+  // Opération Beluga raconte un vol. Le produit précédent racontait la
+  // migration d'une librairie, et son vocabulaire était resté dans les
+  // quêtes : `verdi`, `librairie`, `koplik`. Un élève qui lit « Librairie Verdi »
+  // au milieu d'un vol Beluga voit le cadre s'effondrer — et il ne le signale
+  // pas, il croit avoir mal compris.
+  //
+  // Ce test ne dit pas *ce qu'il faut écrire* à la place. Il dit seulement que
+  // l'ancienne intrigue a disparu, ce qui est vérifiable. Le reste — la
+  // cohérence du nouveau cadre — reste un travail de relecture.
+  //
+  // Il a été écrit après coup, parce que le nom du produit avait déjà changé
+  // deux fois sans que ce contrôle existe. Voir docs/REPRISE.md § 13.
+  const ANCIEN = /\b(verdi|librair\w*|koplik\w*|migration)\b/i;
+
+  for (const q of all) {
+    for (const [champ, valeur] of [
+      ['id', q.id],
+      ['titre', q.title],
+      ['énoncé', q.brief],
+      ['correction', q.solution],
+      ['point de contrôle', q.checkpoint],
+    ]) {
+      assert.doesNotMatch(valeur, ANCIEN,
+        `${q.id} : ${champ} parle encore de l'ancienne intrigue`);
+    }
+    for (const c of q.check ?? []) {
+      assert.doesNotMatch(`${c.prompt} ${c.choices?.join(' ')}`, ANCIEN,
+        `${q.id} : la question ${c.id} parle encore de l'ancienne intrigue`);
+    }
+  }
+
+  // Les flags sont uniques et jamais montrés, mais ils sont dans le dépôt et
+  // dans l'API d'administration : ils doivent suivre le même monde.
+  for (const q of all) {
+    assert.doesNotMatch(q.flag, ANCIEN, `${q.id} : flag de l'ancienne intrigue`);
+  }
+});
+
+test('le fil rouge ne porte jamais une question de compréhension', () => {
+  // Un élève qui répond « parce qu'il faut garder Beluga en vie » n'a rien
+  // appris du Docker, et le jeu ne doit pas lui faire croire le contraire.
+  //
+  // C'est une règle de rédaction, pas de forme : le validateur ne peut pas la
+  // vérifier. Ce test non plus — il vérifie qu'aucune question ne parle du vol,
+  // ce qui couvre le cas le plus grave.
+  //
+  // Le texte entre accents graves est retiré avant le test : `cabine-db` et
+  // `reseau-cabine` sont des **noms de ressources**, pas du récit. Sans cela, la
+  // première question sur le réseau échouerait sur son propre nom de
+  // conteneur — et le test serait écarté au lieu d'être corrigé.
+  const FIL_ROUGE = /\b(beluga|avion|copilote|capitaine|passagers?|équipage|atterriss\w*|turbulence)\b/i;
+  const sansCode = (t) => t.replace(/`[^`]*`/g, '');
+  for (const q of all) {
+    for (const c of q.check ?? []) {
+      const texte = sansCode(`${c.prompt} ${(c.choices ?? []).join(' ')} ${c.explanation ?? ''}`);
+      assert.doesNotMatch(texte, FIL_ROUGE,
+        `${q.id} : la question ${c.id} porte le fil rouge au lieu du mécanisme Docker`);
+    }
+    if (q.recall) {
+      assert.doesNotMatch(sansCode(`${q.recall.prompt} ${(q.recall.accept ?? []).join(' ')}`),
+        FIL_ROUGE, `${q.id} : le réflexe porte le fil rouge`);
+    }
+  }
+});
+
 test('les six quêtes phares sont bien présentes, au bon endroit', () => {
   // Les QUÊTES PHARES sont conservées — leur place dans la progression et leur
   // rôle pédagogique. Leur FLAG, lui, change : il est dérivé du secret d'un
   // joueur et le contenu est réécrit. Ce qui ne doit pas bouger, c'est la
   // position et le rôle, pas la chaîne.
   //
-  // Les cinq autres sont encore celles de la V1 : leur flag est donc encore
-  // celui de la V1, et ce test le vérifie. Quand elles seront réécrites, il
-  // devra changer — c'est normal, il verrouille un contenu, pas un contrat.
+  // Les flags ci-dessous ont suivi le renommage de l'ancienne intrigue vers le
+  // vol Beluga (`verdi` → `cabine`, voir `outils/passe-becane.py`). Un jour où
+  // une quête phare sera réécrite, ce tableau devra changer — c'est normal, il
+  // verrouille un contenu, pas un contrat.
   const attendues = [
-    { flag: 'FLAG{VERDI_BOOT_PERSISTED_AFTER_RESTART}', titre: 'Le premier serveur de la librairie', module: 2 },
+    { flag: 'FLAG{CABINE_UP_AFTER_DAEMON_RESTART}', titre: 'Le premier serveur de bord', module: 2 },
     { flag: 'FLAG{ISOLATION_VERIFIED_PID1_INSIDE_AGENT}', titre: 'Le conteneur est isolé', module: 3 },
-    { flag: 'FLAG{VERDI_STACK_SITE_AND_DB_ISOLATED}', titre: 'Deux services, une machine', module: 4 },
-    { flag: 'FLAG{VERDI_1_0_REPRODUCIBLE_AND_TAGGED}', titre: 'La méthode de la librairie', module: 5 },
-    { flag: 'FLAG{VERDI_VOLUME_NAMED_DURABLE_AND_LISTED}', titre: 'Le volume de Docker', module: 6 },
-    { flag: 'FLAG{VERDI_PILE_RECOVERED_ON_CLEAN_MACHINE}', titre: 'Récupérer une pile entière', module: 7 },
+    { flag: 'FLAG{CABINE_STACK_SITE_AND_DB_ISOLATED}', titre: 'Deux services, une machine', module: 4 },
+    { flag: 'FLAG{CABINE_1_0_REPRODUCIBLE_AND_TAGGED}', titre: 'La méthode de la cabine', module: 5 },
+    { flag: 'FLAG{CABINE_VOLUME_NAMED_DURABLE_AND_LISTED}', titre: 'Le volume de Docker', module: 6 },
+    { flag: 'FLAG{CABINE_PILE_RECOVERED_ON_CLEAN_MACHINE}', titre: 'Récupérer une pile entière', module: 7 },
   ];
   for (const a of attendues) {
     const q = pack.byFlag.get(a.flag);
@@ -86,12 +153,12 @@ test('les quêtes phares gardent leur technique de récupération', () => {
   // Testé par module plutôt que par flag : le flag change à chaque
   // réécriture, la technique reste.
   const attendues = {
-    'FLAG{VERDI_BOOT_PERSISTED_AFTER_RESTART}': ['Le premier serveur de la librairie', 2],
+    'FLAG{CABINE_UP_AFTER_DAEMON_RESTART}': ['Le premier serveur de bord', 2],
     'FLAG{ISOLATION_VERIFIED_PID1_INSIDE_AGENT}': ['Le conteneur est isolé', 3],
-    'FLAG{VERDI_STACK_SITE_AND_DB_ISOLATED}': ['Deux services, une machine', 4],
-    'FLAG{VERDI_1_0_REPRODUCIBLE_AND_TAGGED}': ['La méthode de la librairie', 5],
-    'FLAG{VERDI_VOLUME_NAMED_DURABLE_AND_LISTED}': ['Le volume de Docker', 6],
-    'FLAG{VERDI_PILE_RECOVERED_ON_CLEAN_MACHINE}': ['Récupérer une pile entière', 7],
+    'FLAG{CABINE_STACK_SITE_AND_DB_ISOLATED}': ['Deux services, une machine', 4],
+    'FLAG{CABINE_1_0_REPRODUCIBLE_AND_TAGGED}': ['La méthode de la cabine', 5],
+    'FLAG{CABINE_VOLUME_NAMED_DURABLE_AND_LISTED}': ['Le volume de Docker', 6],
+    'FLAG{CABINE_PILE_RECOVERED_ON_CLEAN_MACHINE}': ['Récupérer une pile entière', 7],
   };
   for (const [flag, [titre, module]] of Object.entries(attendues)) {
     const q = pack.byFlag.get(flag);
@@ -135,12 +202,12 @@ test('les quêtes phares gardent leurs commandes clés', () => {
   // change le flag, le titre et la technique de récupération — mais la quête
   // phare reste « faire tourner un service et le garder en vie ».
   const attendues = {
-    'FLAG{VERDI_BOOT_PERSISTED_AFTER_RESTART}': [/docker\s+run\s+-d/, /-p\s+8080:80/, /nginx/, /curl/, /systemctl\s+restart/],
+    'FLAG{CABINE_UP_AFTER_DAEMON_RESTART}': [/docker\s+run\s+-d/, /-p\s+8080:80/, /nginx/, /curl/, /systemctl\s+restart/],
     'FLAG{ISOLATION_VERIFIED_PID1_INSIDE_AGENT}': [/docker\s+run\s+-it/, /alpine/, /\bid\b/, /ps aux/],
-    'FLAG{VERDI_STACK_SITE_AND_DB_ISOLATED}': [/-p\s+8080:80/, /nginx/, /docker\s+exec/, /curl/, /--network/],
-    'FLAG{VERDI_1_0_REPRODUCIBLE_AND_TAGGED}': [/Dockerfile/, /docker\s+build/, /EXPOSE/, /daemon off/, /docker\s+tag/],
-    'FLAG{VERDI_VOLUME_NAMED_DURABLE_AND_LISTED}': [/docker\s+volume\s+ls/, /docker\s+volume\s+inspect/, /docker\s+volume\s+rm/],
-    'FLAG{VERDI_PILE_RECOVERED_ON_CLEAN_MACHINE}': [/docker\s+compose\s+up\s+-d/, /docker\s+compose\s+down/, /redis/, /docker\s+compose\s+ps/],
+    'FLAG{CABINE_STACK_SITE_AND_DB_ISOLATED}': [/-p\s+8080:80/, /nginx/, /docker\s+exec/, /curl/, /--network/],
+    'FLAG{CABINE_1_0_REPRODUCIBLE_AND_TAGGED}': [/Dockerfile/, /docker\s+build/, /EXPOSE/, /daemon off/, /docker\s+tag/],
+    'FLAG{CABINE_VOLUME_NAMED_DURABLE_AND_LISTED}': [/docker\s+volume\s+ls/, /docker\s+volume\s+inspect/, /docker\s+volume\s+rm/],
+    'FLAG{CABINE_PILE_RECOVERED_ON_CLEAN_MACHINE}': [/docker\s+compose\s+up\s+-d/, /docker\s+compose\s+down/, /redis/, /docker\s+compose\s+ps/],
   };
   for (const [flag, motifs] of Object.entries(attendues)) {
     const q = pack.byFlag.get(flag);

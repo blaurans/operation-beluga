@@ -1,15 +1,17 @@
-// Atelier 2 — Récupérer et lancer
+// Atelier 2 — Ramener les pièces
 //
-// L'atelier 1 a laissé une machine où Docker fonctionne. Cet atelier répond à
-// la question suivante du fil rouge : comment la librairie Verdi obtient-elle
-// le logiciel qui tournera dans ses conteneurs ? On télécharge, on lance, on
-// jette, et on regarde ce qu'il y a dans la boîte.
+// L'atelier 1 a laissé une machine où l'outillage fonctionne. La cause du
+// défaut est trouvée : c'est le service de restauration, et il est arrêté.
+//
+// Cet atelier répond à la question suivante du fil rouge : où est le logiciel
+// qui va tourner dans ce service ? On télécharge, on lance, on jette, et on
+// regarde ce qu'il y a dans la boîte.
 //
 // Mêmes règles qu'à l'atelier 1, appliquées :
 //
 //   1. Aucun artefact mort. La 1 télécharge, la 2 lance ce qui a été téléchargé,
-//      la 3 démonte l'image couche par couche, la 4 monte le site de la
-//      librairie et le fait survivre à un redémarrage.
+//      la 3 démonte l'image couche par couche, la 4 monte le service de bord et
+//      le fait survivre à un redémarrage.
 //   2. Aucun `recall` quand la commande est dans l'énoncé.
 //   3. Le `charge` se termine toujours par 0 — le dernier indice est gratuit.
 //
@@ -22,7 +24,7 @@ export default {
     slug: 'm2-ramener-les-pieces',
     module: 2,
     title: 'Ramener les pièces',
-    tagline: 'Télécharger une image, la lancer, la jeter, démarrer le serveur de catalogue',
+    tagline: 'Télécharger une image, la lancer, la jeter, démarrer le service de bord',
     icon: '📦',
     story: `# Approvisionnement en vol
 
@@ -52,7 +54,7 @@ gestes ne servent à rien. C'est leur ensemble qui fait un serveur.
       estMinutes: 10,
       brief: `# Télécharger une image
 
-Le site de la librairie tourne sur du logiciel libre. Docker ne l'installe pas
+Le site de bord tourne sur du logiciel libre. Docker ne l'installe pas
 comme \`apt\` : il **télécharge** une image déjà construite, faite par d'autres.
 Ce sont les images officielles de Docker Hub, un registre qui en héberge des
 milliers.
@@ -149,7 +151,7 @@ docker run --rm busybox wget -qO- "https://SERVER_IP/api/secret/m2-01-telecharge
           kind: 'boolean',
           prompt: 'Si `docker image inspect alpine --format \'{{.Os}} / {{.Architecture}}\'` affiche autre chose que `uname -m` à l\'atelier 1, c\'est que l\'image ne correspond pas à ta machine.',
           answer: false,
-          explanation: "L'image a sa propre architecture, Downloading and running it on a different architecture needs QEMU emulation — it works, but slower. And the image's architecture is chosen at build time, not forced by your machine.",
+          explanation: "Une image a sa propre architecture, choisie à la construction. La lancer sur une architecture différente passe par une émulation : ça marche, mais c'est plus lent. Ce n'est donc pas un défaut, et ce n'est pas non plus la preuve que l'image ne convient pas.",
           required: false,
         },
       ],
@@ -455,20 +457,21 @@ docker run --rm busybox sh -c "wget -qO- 'https://SERVER_IP/api/secret/m2-03-ana
     },
 
     {
-      id: 'm2-04-initial-boot',
+      id: 'm2-04-premier-service-de-bord',
       order: 4,
-      title: 'Le premier serveur de la librairie',
+      title: 'Le premier serveur de bord',
       points: 100,
-      flag: 'FLAG{VERDI_BOOT_PERSISTED_AFTER_RESTART}',
+      flag: 'FLAG{CABINE_UP_AFTER_DAEMON_RESTART}',
       estMinutes: 18,
-      brief: `# Le premier serveur de la librairie
+      brief: `# Le premier serveur de bord
 
-Premier jalon de la migration : le site de la librairie doit tourner dans un
+Premier jalon du vol : le service de restauration doit tourner dans un
 conteneur, et **y rester après un redémarrage de la machine**.
 
-Tu as téléchargé \`alpine\` et \`busybox\` aux étapes précédentes. Un site web n'est
-pas une image Alpine : il te faut une image qui contient un serveur web. On va
-prendre la plus connue, puis la faire tourner de façon à survivre à un reboot.
+Tu as téléchargé \`alpine\` et \`busybox\` aux étapes précédentes. Le service de
+restauration n'est pas une image Alpine : il te faut une image qui contient un
+serveur web. On va prendre la plus connue, puis la faire tourner de façon à
+survivre à un redémarrage.
 
 **Ta mission**
 
@@ -476,7 +479,7 @@ prendre la plus connue, puis la faire tourner de façon à survivre à un reboot
 
 \`\`\`bash
 docker pull nginx:alpine
-docker run -d --name verdi -p 8080:80 nginx:alpine
+docker run -d --name cabine -p 8080:80 nginx:alpine
 \`\`\`
 
 Trois options, trois rôles. \`-d\` détache le conteneur du terminal pour qu'il
@@ -497,7 +500,7 @@ sudo systemctl restart docker
 docker ps
 \`\`\`
 
-Le conteneur \`verdi\` est-il encore là ? C'est ce que \`restart\` veut dire. Si
+Le conteneur \`cabine\` est-il encore là ? C'est ce que \`restart\` veut dire. Si
 tu as \`--rm\`, il aurait disparu.
 
 4. S'il a disparu, relance-le et explique pourquoi \`restart docker\` l'a
@@ -505,27 +508,27 @@ tu as \`--rm\`, il aurait disparu.
    réponse est dans la politique de redémarrage, lisible ici :
 
 \`\`\`bash
-docker inspect verdi --format '{{.HostConfig.RestartPolicy.Name}}'
+docker inspect cabine --format '{{.HostConfig.RestartPolicy.Name}}'
 \`\`\`
 
 **Pour que le site revienne tout seul**, il faut une politique de redémarrage.
 Ajoute-la, puis teste pour de bon :
 
 \`\`\`bash
-docker update --restart unless-stopped verdi
+docker update --restart unless-stopped cabine
 sudo systemctl restart docker
 docker ps
 \`\`\`
 
 **Ce que tu observes**
 
-- \`docker ps\` montre \`verdi\` en \`Up\`, et \`curl\` renvoie la page d'accueil
+- \`docker ps\` montre \`cabine\` en \`Up\`, et \`curl\` renvoie la page d'accueil
   Nginx.
 - Après \`sudo systemctl restart docker\`, un conteneur \`--rm\` a disparu, un
   conteneur \`--restart\` est reparti.
 - La politique par défaut s'appelle \`no\` : Docker ne redémarre rien tout seul.
 
-**Ce que ça veut dire pour la librairie**
+**Ce que ça veut dire pour le service de restauration**
 
 Un conteneur tout seul ne suffit pas : sans politique de redémarrage, la prochaine
 mise à jour de la machine laisse le site mort. C'est exactement le genre de
@@ -540,10 +543,10 @@ second veut redémarrer. Choisis l'un ou l'autre, jamais les deux.
 
 \`\`\`bash
 export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
-docker run --rm busybox wget -qO- "https://SERVER_IP/api/secret/m2-04-initial-boot/raw?token=$ARENA_TOKEN"
+docker run --rm busybox wget -qO- "https://SERVER_IP/api/secret/m2-04-premier-service-de-bord/raw?token=$ARENA_TOKEN"
 \`\`\``,
       hints: [
-        "Si `curl` ne renvoie rien, le conteneur est peut-être arrêté : `docker ps -a` montre l'état, et `docker logs verdi` dit ce qu'il s'est passé.",
+        "Si `curl` ne renvoie rien, le conteneur est peut-être arrêté : `docker ps -a` montre l'état, et `docker logs cabine` dit ce qu'il s'est passé.",
         "`docker update` change un paramètre d'un conteneur existant, sans le recréer. C'est plus rapide que tout refaire, et ça marche ici.",
         "Une politique `always` redémarre même quand tu as arrêté le conteneur à la main. `unless-stopped` respecte ton arrêt : c'est ce qu'on veut en TP.",
       ],
@@ -593,7 +596,7 @@ docker run --rm busybox wget -qO- "https://SERVER_IP/api/secret/m2-04-initial-bo
       ],
       solution: `\`\`\`bash
 docker pull nginx:alpine
-docker run -d --name verdi -p 8080:80 nginx:alpine
+docker run -d --name cabine -p 8080:80 nginx:alpine
 # -> 4f2a8b1c9d3e7a5f0b2c8d6e4a1f9b3c7d5e2a8f0b1c4d7e3a6f9b2c5d8e1a4f
 
 docker ps
@@ -608,20 +611,20 @@ curl -s http://localhost:8080 | head -3
 # Sans politique de redémarrage :
 sudo systemctl restart docker
 docker ps
-# -> (verdi a disparu)
+# -> (cabine a disparu)
 
-docker update --restart unless-stopped verdi
+docker update --restart unless-stopped cabine
 sudo systemctl restart docker
 docker ps
 # -> 4f2a8b1c9d3e  nginx:alpine  Up 2 seconds  0.0.0.0:8080->80/tcp
 
-docker inspect verdi --format '{{.HostConfig.RestartPolicy.Name}}'
+docker inspect cabine --format '{{.HostConfig.RestartPolicy.Name}}'
 # -> unless-stopped
 \`\`\``,
       teaches: ['docker run -d', '--name', 'docker update', 'RestartPolicy'],
       fetchHint: `export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
-docker run --rm busybox wget -qO- "https://SERVER_IP/api/secret/m2-04-initial-boot/raw?token=$ARENA_TOKEN"`,
-      checkpoint: "Tu as compris quand tu sais expliquer à la direction de la librairie pourquoi le site se serait arrêté le jour de la mise à jour de la machine, et ce qu'il faut écrire pour l'éviter.",
+docker run --rm busybox wget -qO- "https://SERVER_IP/api/secret/m2-04-premier-service-de-bord/raw?token=$ARENA_TOKEN"`,
+      checkpoint: "Tu as compris quand tu sais expliquer au capitaine pourquoi le service se serait arrêté le jour d'une mise à jour de la machine, et ce qu'il faut écrire pour l'éviter.",
     },
   ],
 };

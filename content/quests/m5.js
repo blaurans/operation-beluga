@@ -1,6 +1,6 @@
 // Atelier 5 — Figer la version
 //
-// Le site de la librairie tourne, mais il tourne « comme ça » : quelqu'un a
+// Le site de bord tourne, mais il tourne « comme ça » : quelqu'un a
 // modifié un fichier à la main, dans un conteneur, et personne ne sait
 // comment reproduire ce qu'il voit. C'est le problème que les images
 // reproductibles résolvent.
@@ -10,7 +10,7 @@
 //   1. modifier un conteneur et le committer   → ça marche, c'est affreux
 //   2. écrire les instructions à la main        → correct, mais opaque
 //   3. écrire un Dockerfile                     → l'image reproductible
-//   4. construire, versionner, distribuer       → le jalon du chantier
+//   4. construire, versionner, distribuer       → le jalon du vol
 //
 // Le point non négociable de l'atelier est écrit dans l'énoncé de la quête 1 :
 // `docker commit` fonctionne, et il ne faut surtout pas l'utiliser. C'est un
@@ -60,7 +60,7 @@ sera pas ce qu'on fera à la fin de l'atelier.
 
 **Ta mission**
 
-1. Reproduis le problème. Lance le site de la librairie, entre dedans, et modifie
+1. Reproduis le problème. Lance le service de restauration, entre dedans, et modifie
    sa page d'accueil à la main, comme un administrateur pressé un vendredi :
 
 \`\`\`bash
@@ -68,7 +68,7 @@ docker run -d --name brouillon nginx:alpine
 docker exec -it brouillon sh
 \`\`\`
 
-À l'intérieur, écris un fichier \`index.html\` qui porte le nom de la librairie,
+À l'intérieur, écris un fichier \`index.html\` qui porte le nom de bord,
 puis sors. Vérifie que ça marche :
 
 \`\`\`bash
@@ -79,7 +79,7 @@ docker exec brouillon sh -c 'cat /usr/share/nginx/html/index.html'
    pouvoir revenir en arrière :
 
 \`\`\`bash
-docker commit brouillon verdi-site:nouvelle
+docker commit brouillon service-cabine:nouvelle
 docker images
 \`\`\`
 
@@ -91,21 +91,21 @@ docker run -d --name brouillon nginx:alpine
 docker exec brouillon sh -c 'cat /usr/share/nginx/html/index.html'
 \`\`\`
 
-La page est celle de Nginx, pas la tienne. Mais l'image \`verdi-site:nouvelle\`
+La page est celle de Nginx, pas la tienne. Mais l'image \`service-cabine:nouvelle\`
 elle, elle contient ton fichier.
 
 4. Repars de l'image sauvegardée. L'option \`--rm\` à la création évite d'avoir à
    nettoyer :
 
 \`\`\`bash
-docker run -d --rm --name brouillon verdi-site:nouvelle
+docker run -d --rm --name brouillon service-cabine:nouvelle
 docker exec brouillon sh -c 'cat /usr/share/nginx/html/index.html'
 \`\`\`
 
 5. **Le piège.** Regarde ce que \`docker commit\` a mis dans l'image :
 
 \`\`\`bash
-docker history verdi-site:nouvelle
+docker history service-cabine:nouvelle
 \`\`\`
 
 Une seule couche, qui dit \`CMD\`. Aucune trace de la commande qui a écrit le
@@ -182,26 +182,26 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-01-le-raccourc
       solution: `\`\`\`bash
 docker run -d --name brouillon nginx:alpine
 docker exec -it brouillon sh
-# /usr/share/nginx/html # echo 'Librairie Verdi' > index.html
+# /usr/share/nginx/html # echo 'Restauration Beluga' > index.html
 # exit
 
 docker exec brouillon sh -c 'cat /usr/share/nginx/html/index.html'
-# -> <h1>Librairie Verdi</h1>
+# -> <h1>Restauration Beluga</h1>
 
-docker commit brouillon verdi-site:nouvelle
+docker commit brouillon service-cabine:nouvelle
 docker images
-# -> verdi-site  nouvelle  a1b2c3d4e5f6  10 seconds ago  22.3MB
+# -> service-cabine  nouvelle  a1b2c3d4e5f6  10 seconds ago  22.3MB
 
 docker rm -f brouillon
 docker run -d --name brouillon nginx:alpine
 docker exec brouillon sh -c 'cat /usr/share/nginx/html/index.html'
 # -> (la page de Nginx : le travail est perdu)
 
-docker run -d --rm --name brouillon verdi-site:nouvelle
+docker run -d --rm --name brouillon service-cabine:nouvelle
 docker exec brouillon sh -c 'cat /usr/share/nginx/html/index.html'
-# -> Librairie Verdi   (retrouvé depuis l'image)
+# -> Restauration Beluga   (retrouvé depuis l'image)
 
-docker history verdi-site:nouvelle
+docker history service-cabine:nouvelle
 # -> IMAGE        CREATED BY   SIZE
 # -> a1b2c3d4e5   CMD ["nginx" …]   22.3MB
 # ->                     aucune trace du echo
@@ -231,7 +231,7 @@ le **build**.
    ligne la plus importante : celle qui dit **de quoi** part l'image.
 
 \`\`\`bash
-mkdir -p ~/verdi-image && cd ~/verdi-image
+mkdir -p ~/service-cabine && cd ~/service-cabine
 cat > Dockerfile <<'EOF'
 FROM nginx:alpine
 EOF
@@ -242,7 +242,7 @@ EOF
 
 \`\`\`bash
 cat > index.html <<'EOF'
-Librairie Verdi
+Restauration Beluga
 Commandes, romans, et du papier.
 EOF
 cat >> Dockerfile <<'EOF'
@@ -253,14 +253,14 @@ EOF
 3. Construis l'image. Le nom se lit \`nom:étiquette\` :
 
 \`\`\`bash
-docker build -t verdi-site:1.0 .
+docker build -t service-cabine:1.0 .
 \`\`\`
 
 4. Lance-la et vérifie que ta page est là, **sans** avoir touché à un conteneur :
 
 \`\`\`bash
-docker run -d --name verdi-test -p 8080:80 verdi-site:1.0
-docker exec verdi-test sh -c 'cat /usr/share/nginx/html/index.html'
+docker run -d --name cabine-test -p 8080:80 service-cabine:1.0
+docker exec cabine-test sh -c 'cat /usr/share/nginx/html/index.html'
 curl -s http://localhost:8080
 \`\`\`
 
@@ -268,7 +268,7 @@ curl -s http://localhost:8080
    la quête précédente :
 
 \`\`\`bash
-docker history verdi-site:1.0
+docker history service-cabine:1.0
 \`\`\`
 
 **Ce que tu observes**
@@ -311,7 +311,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-02-ecrire-le-d
           prompt: 'Que fait l\'instruction `FROM nginx:alpine` ?',
           choices: [
             'Elle indique de quelle image part la construction',
-            'Elle télécharge le site de la librairie',
+            'Elle télécharge le service de restauration',
             'Elle lance le conteneur après le build',
             'Elle déclare le port du serveur',
           ],
@@ -343,10 +343,10 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-02-ecrire-le-d
         },
       ],
       solution: `\`\`\`bash
-mkdir -p ~/verdi-image && cd ~/verdi-image
+mkdir -p ~/service-cabine && cd ~/service-cabine
 
 cat > index.html <<'EOF'
-Librairie Verdi
+Restauration Beluga
 Commandes, romans, et du papier.
 EOF
 
@@ -355,23 +355,23 @@ FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/index.html
 EOF
 
-docker build -t verdi-site:1.0 .
+docker build -t service-cabine:1.0 .
 # -> Step 1/2 : FROM nginx:alpine
 # -> Step 2/2 : COPY index.html /usr/share/nginx/html/index.html
 # -> Successfully built 4f2a8b1c9d3e
 
-docker run -d --name verdi-test -p 8080:80 verdi-site:1.0
-docker exec verdi-test sh -c 'cat /usr/share/nginx/html/index.html'
-# -> Librairie Verdi
+docker run -d --name cabine-test -p 8080:80 service-cabine:1.0
+docker exec cabine-test sh -c 'cat /usr/share/nginx/html/index.html'
+# -> Restauration Beluga
 # -> Commandes, romans, et du papier.
 
-docker history verdi-site:1.0
+docker history service-cabine:1.0
 # -> IMAGE        CREATED BY                                   SIZE
 # -> 9a8b7c6d     COPY index.html /usr/share/nginx/html/ind…   1.02kB
 # -> 4f2a8b1c     /bin/sh -c #(nop) CMD ["nginx" "-g" "da…    0B
 # -> b1c2d3e4     /bin/sh -c #(nop)  ENTRYPOINT …              0B
 
-docker rm -f verdi-test
+docker rm -f cabine-test
 \`\`\`
 
 L'historique montre enfin l'instruction \`COPY\`. C'est toute la différence avec
@@ -400,7 +400,7 @@ interaction est la source d'un piège qui arrête beaucoup de monde.
    conteneur ; \`CMD\` dit **avec quels arguments** :
 
 \`\`\`bash
-cd ~/verdi-image
+cd ~/service-cabine
 cat > Dockerfile <<'EOF'
 FROM alpine
 ENTRYPOINT ["echo"]
@@ -565,16 +565,16 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-03-cmd-et-entr
     },
 
     {
-      id: 'm5-04-la-methode-de-la-librairie',
+      id: 'm5-04-la-methode-de-la-cabine',
       order: 4,
-      title: 'La méthode de la librairie',
+      title: 'La méthode de la cabine',
       points: 400,
-      flag: 'FLAG{VERDI_1_0_REPRODUCIBLE_AND_TAGGED}',
+      flag: 'FLAG{CABINE_1_0_REPRODUCIBLE_AND_TAGGED}',
       estMinutes: 20,
-      brief: `# La méthode de la librairie
+      brief: `# La méthode de la cabine
 
-Le jalon : la librairie veut une méthode écrite, versionnée, et qui tient dans
-trois commandes. L'administrateur part en vacances la semaine prochaine.
+Le jalon : le service de restauration veut une méthode écrite, versionnée, et qui
+tient dans trois commandes. L'administrateur part en vacances la semaine prochaine.
 
 Ce que tu as fait à la quête 2 tient déjà en trois lignes. Il reste à le faire
 **proprement** : une image qui porte un numéro de version, et un fichier qui
@@ -582,11 +582,11 @@ porte la procédure.
 
 **Ta mission**
 
-1. Écris l'image de la librairie, proprement. Cette fois, l'image installe
+1. Écris l'image de bord, proprement. Cette fois, l'image installe
    ce qu'elle a besoin, expose son port, et se lance toute seule :
 
 \`\`\`bash
-cd ~/verdi-image
+cd ~/service-cabine
 cat > Dockerfile <<'EOF'
 FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/index.html
@@ -601,14 +601,14 @@ premier plan, sinon le conteneur s'arrêterait aussitôt.
 2. Construis, en portant un numéro de version :
 
 \`\`\`bash
-docker build -t verdi-site:1.0 .
+docker build -t service-cabine:1.0 .
 \`\`\`
 
 3. Lance **exactement** comme en production, et vérifie la page :
 
 \`\`\`bash
-docker rm -f verdi 2>/dev/null
-docker run -d --name verdi -p 8080:80 verdi-site:1.0
+docker rm -f cabine 2>/dev/null
+docker run -d --name cabine -p 8080:80 service-cabine:1.0
 curl -s http://localhost:8080
 \`\`\`
 
@@ -616,10 +616,10 @@ curl -s http://localhost:8080
    dans un répertoire vide, avec le même Dockerfile, et compare les identifiants :
 
 \`\`\`bash
-docker images verdi-site
+docker images service-cabine
 mkdir -p /tmp/rebuild && cp Dockerfile index.html /tmp/rebuild/
-cd /tmp/rebuild && docker build -t verdi-site:1.0 .
-docker images verdi-site
+cd /tmp/rebuild && docker build -t service-cabine:1.0 .
+docker images service-cabine
 \`\`\`
 
 Les deux identifiants d'image sont-ils identiques ? Ils ne peuvent pas l'être :
@@ -630,17 +630,17 @@ produit est le même. C'est ce qui compte.
    système doit recevoir :
 
 \`\`\`bash
-cd ~/verdi-image
+cd ~/service-cabine
 cat > DEPLOYER.md <<'EOF'
-Déployer le site de la librairie
+Déployer le service de restauration
 --------------------------------
 
 1. Construire l'image :
-   docker build -t verdi-site:1.0 .
+   docker build -t service-cabine:1.0 .
 
 2. Remplacer le conteneur en service :
-   docker rm -f verdi
-   docker run -d --name verdi -p 8080:80 verdi-site:1.0
+   docker rm -f cabine
+   docker run -d --name cabine -p 8080:80 service-cabine:1.0
 
 3. Vérifier :
    curl -s http://localhost:8080
@@ -650,9 +650,9 @@ EOF
 6. Tags. La convention dit qu'une image sans version est une image **jetable** :
 
 \`\`\`bash
-docker tag verdi-site:1.0 verdi-site:latest
-docker images verdi-site
-docker rmi verdi-site:latest
+docker tag service-cabine:1.0 service-cabine:latest
+docker images service-cabine
+docker rmi service-cabine:latest
 \`\`\`
 
 **Ce que tu observes**
@@ -664,12 +664,12 @@ docker rmi verdi-site:latest
 - Étape 6 : \`latest\` n'est qu'un nom. Sans lui, une image ne se lance qu'avec sa
   version exacte — ce qui est le comportement qu'on veut.
 
-**Ce que ça change pour la librairie**
+**Ce que ça change pour le service de restauration**
 
 La direction peut maintenant répondre à deux questions qu'elle ne pouvait pas
 poser avant :
 
-- « Quelle version tourne en production ? » → \`docker images verdi-site\`
+- « Quelle version tourne en production ? » → \`docker images service-cabine\`
 - « Comment la reconstruire ? » → \`cat DEPLOYER.md\`
 
 La seconde était sans réponse pendant tout le chantier. C'est ce qui s'appelle
@@ -679,12 +679,12 @@ une chaîne de reconstruction.
 
 \`\`\`bash
 export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
-docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-04-la-methode-de-la-librairie/raw?token=$ARENA_TOKEN"
+docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-04-la-methode-de-la-cabine/raw?token=$ARENA_TOKEN"
 \`\`\``,
       hints: [
         "`daemon off;` est une option de Nginx, pas de Docker. Sans elle, le processus se démonise et le conteneur n'a plus de PID 1.",
         "`EXPOSE 80` documente, il ne publie pas. Sans `-p`, le port 80 du conteneur reste inaccessible de la machine — c'est le sujet de l'atelier 4.",
-        "`docker images verdi-site` liste toutes les étiquettes de cette image. Deux lignes avec deux identifiants, c'est ce qu'on cherche à voir.",
+        "`docker images service-cabine` liste toutes les étiquettes de cette image. Deux lignes avec deux identifiants, c'est ce qu'on cherche à voir.",
       ],
       charge: { perHint: 1, autonomy: [1, 1, 0] },
       check: [
@@ -726,7 +726,7 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-04-la-methode-
         },
       ],
       solution: `\`\`\`bash
-cd ~/verdi-image
+cd ~/service-cabine
 cat > Dockerfile <<'EOF'
 FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/index.html
@@ -734,34 +734,34 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 EOF
 
-docker build -t verdi-site:1.0 .
-docker rm -f verdi
-docker run -d --name verdi -p 8080:80 verdi-site:1.0
+docker build -t service-cabine:1.0 .
+docker rm -f cabine
+docker run -d --name cabine -p 8080:80 service-cabine:1.0
 curl -s http://localhost:8080
-# -> Librairie Verdi
+# -> Restauration Beluga
 
-docker images verdi-site
+docker images service-cabine
 # -> REPOSITORY    TAG   IMAGE ID       CREATED       SIZE
-# -> verdi-site    1.0   4f2a8b1c9d3e   2 minutes ago  22.3MB
+# -> service-cabine    1.0   4f2a8b1c9d3e   2 minutes ago  22.3MB
 
 # Reconstruction dans un répertoire vide :
 mkdir -p /tmp/rebuild && cp Dockerfile index.html /tmp/rebuild/
-cd /tmp/rebuild && docker build -t verdi-site:1.0 .
-docker images verdi-site
-# -> verdi-site 1.0  9a8b7c6d5e4f   (identifiant différent,
+cd /tmp/rebuild && docker build -t service-cabine:1.0 .
+docker images service-cabine
+# -> service-cabine 1.0  9a8b7c6d5e4f   (identifiant différent,
 #                                        contenu identique)
 
-docker tag verdi-site:1.0 verdi-site:latest
-docker images verdi-site
+docker tag service-cabine:1.0 service-cabine:latest
+docker images service-cabine
 # -> deux étiquettes, un seul identifiant
-docker rmi verdi-site:latest
+docker rmi service-cabine:latest
 \`\`\`
 
 Sans \`daemon off;\`, le build réussit et le conteneur s'arrête tout de suite :
 c'est le piège que cet énoncé évite en l'écrivant directement.`,
       teaches: ['docker build', 'EXPOSE', 'daemon off;', 'docker tag', 'chaîne de reconstruction'],
       fetchHint: `export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
-docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-04-la-methode-de-la-librairie/raw?token=$ARENA_TOKEN"`,
+docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m5-04-la-methode-de-la-cabine/raw?token=$ARENA_TOKEN"`,
       checkpoint: "Tu as compris quand tu peux répondre aux deux questions que la direction posait : quelle version tourne, et comment la reconstruire.",
     },
   ],

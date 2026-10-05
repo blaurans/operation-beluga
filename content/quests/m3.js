@@ -1,7 +1,7 @@
 // Atelier 3 — Régler en service
 //
 // L'atelier 2 a fait tourner un conteneur. Cet atelier répond à la prochaine
-// question du fil rouge : le site de la librairie est en ligne, mais il est
+// question du fil rouge : le service de restauration est en ligne, mais il est
 // mal réglé. Il perd ses données à chaque redémarrage, et personne ne peut le
 // consulter depuis l'extérieur.
 //
@@ -42,11 +42,11 @@ relancer, et aller le voir de l'intérieur.
       order: 1,
       title: 'Ports et variables d\'environnement',
       points: 25,
-      flag: 'FLAG{PORT_9090_ENV_CONFIGURED_VERDI}',
+      flag: 'FLAG{PORT_9090_ENV_CONFIGURED_CABINE}',
       estMinutes: 14,
       brief: `# Ports et variables d'environnement
 
-Le site de la librairie tourne, mais **personne ne peut le consulter** : depuis
+Le site de bord tourne, mais **personne ne peut le consulter** : depuis
 la machine hôte, le port est fermé. Et l'administrateur du site ne peut pas
 changer le texte affiché sans qu'on reconstruise l'image.
 
@@ -59,7 +59,7 @@ on ne le règle pas après.
    disparu :
 
 \`\`\`bash
-docker rm -f verdi
+docker rm -f cabine
 docker ps -a
 \`\`\`
 
@@ -67,33 +67,33 @@ docker ps -a
    format est **hôte : conteneur** — l'ordre est le piège le plus fréquent :
 
 \`\`\`bash
-docker run -d --name verdi -p 9090:80 nginx:alpine
+docker run -d --name cabine -p 9090:80 nginx:alpine
 curl -s http://localhost:9090 | head -3
 \`\`\`
 
 3. Regarde ce que Docker a retenu comme configuration :
 
 \`\`\`bash
-docker port verdi
+docker port cabine
 \`\`\`
 
 4. Recrée encore une fois, cette fois avec une variable d'environnement. La
    syntaxe est \`NOM=valeur\`, sans espace autour du signe égal :
 
 \`\`\`bash
-docker rm -f verdi
-docker run -d --name verdi -p 9090:80 \\
-  -e NOM_DU_SITE="Librairie Verdi" \\
+docker rm -f cabine
+docker run -d --name cabine -p 9090:80 \\
+  -e NOM_DU_SERVICE="Restauration Beluga" \\
   -e MODE_LANGUE=fr \\
   nginx:alpine
-docker inspect verdi --format '{{range .Config.Env}}{{println .}}{{end}}'
+docker inspect cabine --format '{{range .Config.Env}}{{println .}}{{end}}'
 \`\`\`
 
 **Ce que tu observes**
 
 - \`curl http://localhost:9090\` répond : le port est publié. Mais
   \`curl http://localhost:80\` non — rien n'est lié au port 80 de la machine.
-- \`docker port verdi\` affiche \`80/tcp -> 0.0.0.0:9090\` : à gauche ce qu écoute
+- \`docker port cabine\` affiche \`80/tcp -> 0.0.0.0:9090\` : à gauche ce qu écoute
   **dans** le conteneur, à droite ce qui est joignable **dehors**.
 - Les variables d'environnement apparaissent dans l'inspection, avec les
   variables que Docker pose lui-même.
@@ -101,7 +101,7 @@ docker inspect verdi --format '{{range .Config.Env}}{{println .}}{{end}}'
 **Bon à retenir**
 
 Deux conteneurs ne peuvent pas sepublished sur le même port de la machine : le
-second échoue avec \`port is already allocated\`. Si la librairie a déjà un
+second échoue avec \`port is already allocated\`. Si le service de restauration a déjà un
 service sur 9090, on choisira autre chose.
 
 **Ton mot de passe**
@@ -148,34 +148,34 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m3-01-ports-et-va
         {
           id: 'm3-01-env-syntaxe',
           kind: 'boolean',
-          prompt: 'L\'option `-e MON_SITE = "Chez moi"` est correcte et pose la variable MON_SITE.',
+          prompt: 'L\'option `-e NOM = "valeur"` avec un espace autour du `=` est correcte et pose la variable NOM.',
           answer: false,
-          explanation: "Faux : aucun espace autour du `=`. `-e MON_SITE = \"Chez moi\"` est interprété comme trois arguments distincts, et le lancement échoue ou pose une variable vide.",
+          explanation: "Faux : aucun espace autour du `=`. `-e NOM = \"valeur\"` est interprété comme trois arguments distincts, et le lancement échoue ou pose une variable vide.",
           required: false,
         },
       ],
       solution: `\`\`\`bash
-docker rm -f verdi
+docker rm -f cabine
 docker ps -a
 
-docker run -d --name verdi -p 9090:80 nginx:alpine
+docker run -d --name cabine -p 9090:80 nginx:alpine
 curl -s http://localhost:9090 | head -3
 # -> <!DOCTYPE html>
 # -> <html>
 # -> <head><title>Welcome to nginx!</title></head>
 
-docker port verdi
+docker port cabine
 # -> 80/tcp -> 0.0.0.0:9090
 
-docker rm -f verdi
-docker run -d --name verdi -p 9090:80 \\
-  -e NOM_DU_SITE="Librairie Verdi" \\
+docker rm -f cabine
+docker run -d --name cabine -p 9090:80 \\
+  -e NOM_DU_SERVICE="Restauration Beluga" \\
   -e MODE_LANGUE=fr \\
   nginx:alpine
 
-docker inspect verdi --format '{{range .Config.Env}}{{println .}}{{end}}'
+docker inspect cabine --format '{{range .Config.Env}}{{println .}}{{end}}'
 # -> PATH=/usr/local/sbin:/usr/local/bin:...
-# -> NOM_DU_SITE=Librairie Verdi
+# -> NOM_DU_SERVICE=Restauration Beluga
 # -> MODE_LANGUE=fr
 # -> NGINX_VERSION=1.27
 \`\`\``,
@@ -190,11 +190,11 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m3-01-ports-et-va
       order: 2,
       title: 'Modifier un conteneur',
       points: 25,
-      flag: 'FLAG{RECREATED_AFTER_CONFIG_CHANGE_VERDI}',
+      flag: 'FLAG{RECREATED_AFTER_CONFIG_CHANGE_CABINE}',
       estMinutes: 14,
       brief: `# Modifier un conteneur
 
-L'administrateur veut que le site affiche « Librairie Verdi » au lieu de la page
+L'administrateur veut que le site affiche « Restauration Beluga » au lieu de la page
 par défaut. Une variable d'environnement ne suffit pas : il faut que le serveur
 la lise au démarrage.
 
@@ -208,26 +208,26 @@ conteneneur et modifier les fichiers. Montrons ce qu'elle coûte.
    shell :
 
 \`\`\`bash
-docker exec -it verdi sh
+docker exec -it cabine sh
 \`\`\`
 
-À l'intérieur, écris une page qui porte le nom de la librairie, sors, et
+À l'intérieur, écris une page qui porte le nom de bord, sors, et
 vérifie que le changement est visible de l'extérieur :
 
 \`\`\`bash
-curl -s http://localhost:9090 | grep -i verdi
+curl -s http://localhost:9090 | grep -i beluga
 \`\`\`
 
 2. Supprime le conteneur, recrée-le **identiquement**, et regarde ce qui
    disparaît :
 
 \`\`\`bash
-docker rm -f verdi
-docker run -d --name verdi -p 9090:80 \\
-  -e NOM_DU_SITE="Librairie Verdi" \\
+docker rm -f cabine
+docker run -d --name cabine -p 9090:80 \\
+  -e NOM_DU_SERVICE="Restauration Beluga" \\
   -e MODE_LANGUE=fr \\
   nginx:alpine
-curl -s http://localhost:9090 | grep -i verdi
+curl -s http://localhost:9090 | grep -i beluga
 echo "code de retour : $?"
 \`\`\`
 
@@ -238,13 +238,13 @@ le moment de la quête.
    on le monte dans le conteneur :
 
 \`\`\`bash
-mkdir -p ~/verdi
-echo 'Librairie Verdi - Accueil du site' > ~/verdi/index.html
-docker rm -f verdi
-docker run -d --name verdi -p 9090:80 \\
-  -v ~/verdi:/usr/share/nginx/html:ro \\
+mkdir -p ~/cabine
+echo 'Restauration Beluga - Accueil de bord' > ~/cabine/index.html
+docker rm -f cabine
+docker run -d --name cabine -p 9090:80 \\
+  -v ~/cabine:/usr/share/nginx/html:ro \\
   nginx:alpine
-curl -s http://localhost:9090 | grep -i verdi
+curl -s http://localhost:9090 | grep -i beluga
 echo "code de retour : $?"
 \`\`\`
 
@@ -257,7 +257,7 @@ C'est ce qu'on veut pour du contenu servi.
 - Après recréation à l'identique, la modification a disparu. Le conteneur
   recréé est identique au premier.
 - Le montage de l'étape 3 rend la modification **durable** : elle vit dans
-  \`~/verdi\`, sur la machine, pas dans le conteneur.
+  \`~/cabine\`, sur la machine, pas dans le conteneur.
 
 **La leçon**
 
@@ -316,25 +316,25 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m3-02-modifier-un
         },
       ],
       solution: `\`\`\`bash
-docker exec -it verdi sh
-# /usr/share/nginx/html # echo 'Librairie Verdi - Accueil du site' > index.html
+docker exec -it cabine sh
+# /usr/share/nginx/html # echo 'Restauration Beluga - Accueil de bord' > index.html
 # exit
-curl -s http://localhost:9090 | grep -i verdi
-# -> Librairie Verdi - Accueil du site   (code de retour 0)
+curl -s http://localhost:9090 | grep -i beluga
+# -> Restauration Beluga - Accueil de bord   (code de retour 0)
 
-docker rm -f verdi
-docker run -d --name verdi -p 9090:80 -e NOM_DU_SITE="Librairie Verdi" nginx:alpine
-curl -s http://localhost:9090 | grep -i verdi
+docker rm -f cabine
+docker run -d --name cabine -p 9090:80 -e NOM_DU_SERVICE="Restauration Beluga" nginx:alpine
+curl -s http://localhost:9090 | grep -i beluga
 # -> (rien)
 echo "code de retour : $?"
 # -> 1                            (la modification a disparu)
 
-mkdir -p ~/verdi
-echo 'Librairie Verdi - Accueil du site' > ~/verdi/index.html
-docker rm -f verdi
-docker run -d --name verdi -p 9090:80 -v ~/verdi:/usr/share/nginx/html:ro nginx:alpine
-curl -s http://localhost:9090 | grep -i verdi
-# -> Librairie Verdi - Accueil du site   (code de retour 0 : ça tient)
+mkdir -p ~/cabine
+echo 'Restauration Beluga - Accueil de bord' > ~/cabine/index.html
+docker rm -f cabine
+docker run -d --name cabine -p 9090:80 -v ~/cabine:/usr/share/nginx/html:ro nginx:alpine
+curl -s http://localhost:9090 | grep -i beluga
+# -> Restauration Beluga - Accueil de bord   (code de retour 0 : ça tient)
 \`\`\``,
       teaches: ['docker exec -it', 'docker rm -f', '-v montage', 'option :ro', 'grep code de retour'],
       fetchHint: `export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
@@ -511,13 +511,13 @@ docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m3-03-le-cycle-de
       estMinutes: 20,
       brief: `# Le conteneur est isolé
 
-Le site de la librairie tourne. Reste une question que l'administrateur pose
+Le site de bord tourne. Reste une question que l'administrateur pose
 toujours, et qui décide de la sécurité de toute l'infrastructure : **un
 conteneur peut-il toucher à la machine ?**
 
 Un conteneur n'est pas une machine virtuelle : c'est un ensemble de
 restrictions sur les processus du noyau. Comprendre *comment* elles sont
-posées, c'est comprendre ce qui sépare la librairie d'un programme qui
+posées, c'est comprendre ce qui sépare le service de restauration d'un programme qui
 s'échappe.
 
 **Ta mission**
@@ -562,7 +562,7 @@ est le numéro 1, et pourquoi n'est-ce pas ton shell ?**
    Vérifie :
 
 \`\`\`bash
-docker run -d --name journal alpine sh -c 'echo "secret de la librairie"; sleep 300'
+docker run -d --name journal alpine sh -c 'echo "secret de bord"; sleep 300'
 docker logs journal
 docker exec journal sh -c 'ls /var/log'
 \`\`\`
@@ -588,7 +588,7 @@ machine, c'est que le conteneur ne voit qu'un processus, un système de fichiers
 et un réseau restreints. Ce n'est pas une virtualisation : c'est un
 cloisonnement, beaucoup plus léger et beaucoup moins solide.
 
-C'est exactement pourquoi la librairie n'est **pas** seule derrière son
+C'est exactement pourquoi le service de restauration n'est **pas seul** derrière son
 conteneur : un second conteneur tient le portail, et aucun des deux ne monte le
 répertoire de l'autre en écriture.
 
@@ -662,16 +662,16 @@ docker run -it alpine /bin/sh
 # / # ps aux
 #   1   root   0:00 /bin/sh     <- le shell du conteneur, pas le tien
 
-docker run -d --name journal alpine sh -c 'echo "secret de la librairie"; sleep 300'
+docker run -d --name journal alpine sh -c 'echo "secret de bord"; sleep 300'
 docker logs journal
-# -> secret de la librairie
+# -> secret de bord
 docker exec journal sh -c 'ls /var/log'
 # -> (vide ou minimal : les journaux du conteneur ne sont pas ceux de la machine)
 \`\`\``,
       teaches: ['isolation', 'espace de noms', 'PID 1', 'root cloisonné', 'docker exec'],
       fetchHint: `export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
 docker run --rm alpine wget -qO- "https://SERVER_IP/api/secret/m3-04-le-conteneur-est-isole/raw?token=$ARENA_TOKEN"`,
-      checkpoint: "Tu as compris quand tu peux expliquer à l'administrateur pourquoi un conteneur n'est pas une machine virtuelle, et ce que ça implique pour la sécurité du site de la librairie.",
+      checkpoint: "Tu as compris quand tu peux expliquer à l'administrateur pourquoi un conteneur n'est pas une machine virtuelle, et ce que ça implique pour la sécurité du site de bord.",
     },
   ],
 };

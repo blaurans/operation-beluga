@@ -52,7 +52,7 @@ vol.
     dict(
         n=2, slug='m2-ramener-les-pieces', icon='\U0001f4e6',
         title='Ramener les pièces',
-        tagline="Télécharger une image, la lancer, la jeter, démarrer le serveur de catalogue",
+        tagline="Télécharger une image, la lancer, la jeter, démarrer le service de bord",
         story="""# Approvisionnement en vol
 
 La cause du défaut est trouvée : c'est le service qui distribue les repas aux

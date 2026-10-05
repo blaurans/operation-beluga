@@ -459,7 +459,7 @@ docker run --rm alpine sh -c "mkdir -p /arena && wget -qO /arena/secret.txt 'htt
       estMinutes: 12,
       brief: `# Le service ne tourne pas
 
-Le conteneur de l'atelier précédent a bienaffiché son message, donc on pourrait
+Le conteneur de l'atelier précédent a bien affiché son message, donc on pourrait
 croire que tout va bien. Il n'en est rien : **ton client Docker est installé,
 mais son démon ne tourne pas.**
 

@@ -1,6 +1,6 @@
 // Atelier 7 — Décrire la pile
 //
-// Dernier atelier du chantier. La librairie a sa base, son site, son réseau.
+// Dernier atelier du chantier. Le service de restauration a sa base, son site, son réseau.
 // Jusqu'ici, tout cela s'est lancé à la main, commande par commande, dans un
 // terminal qu'on oublie derrière soi.
 //
@@ -11,7 +11,7 @@
 // concept est unique et la syntaxe s'apprend en écrivant. Surchargé, l'atelier
 // deviendrait une leçon de YAML.
 //
-// Et l'atelier finit sur ce qui reste à faire, parce que la migration s'arrête
+// Et l'atelier finit sur ce qui reste à faire, parce que le vol s'arrête
 // là : un volume ne fait pas une sauvegarde, et une pile décrite n'est pas
 // déployée ailleurs toute seule.
 //
@@ -78,12 +78,12 @@ pas piloter est un outil qu'on utilise de travers.
       estMinutes: 18,
       brief: `# Un seul fichier
 
-Depuis l'atelier 4, la librairie a deux services. Pour les lancer, on a tapé :
+Depuis l'atelier 4, le service de restauration a deux contributaires. Pour les lancer,\non a tapé :
 
 \`\`\`bash
-docker network create reseau-verdi
-docker run -d --name verdi-db --network reseau-verdi -v donnees-verdi:/data redis:alpine
-docker run -d --name verdi --network reseau-verdi -p 8080:80 nginx:alpine
+docker network create reseau-cabine
+docker run -d --name cabine-db --network reseau-cabine -v donnees-cabine:/data redis:alpine
+docker run -d --name cabine --network reseau-cabine -p 8080:80 nginx:alpine
 \`\`\`
 
 Trois lignes. Mais dans quel ordre, avec quel réseau, quel volume, quel port ? Si
@@ -103,27 +103,27 @@ docker compose version
 \`\`\`
 
 2. Prépare le projet. Le fichier peut s'appeler \`compose.yaml\` ou
-   \`docker-compose.yml\` — les deux marchent. On va écrire la pile **de la
-   librairie**, pas un exemple :
+   \`docker-compose.yml\` — les deux marchent. On va écrire la pile **du vol**,
+   pas un exemple :
 
 \`\`\`bash
-mkdir -p ~/verdi-pile && cd ~/verdi-pile
+mkdir -p ~/cabine-pile && cd ~/cabine-pile
 cat > compose.yaml <<'EOF'
 services:
   db:
     image: redis:alpine
-    container_name: verdi-db
+    container_name: cabine-db
     volumes:
-      - donnees-verdi:/data
+      - donnees-cabine:/data
 
   web:
     image: nginx:alpine
-    container_name: verdi
+    container_name: cabine
     ports:
       - "8080:80"
 
 volumes:
-  donnees-verdi:
+  donnees-cabine:
 EOF
 \`\`\`
 
@@ -151,25 +151,25 @@ cat > compose.yaml <<'EOF'
 services:
   db:
     image: redis:alpine
-    container_name: verdi-db
+    container_name: cabine-db
     volumes:
-      - donnees-verdi:/data
+      - donnees-cabine:/data
 
   web:
     image: nginx:alpine
-    container_name: verdi
+    container_name: cabine
     ports:
       - "8080:80"
     networks:
-      - verdi
+      - cabine
     depends_on:
       - db
 
 networks:
-  verdi:
+  cabine:
 
 volumes:
-  donnees-verdi:
+  donnees-cabine:
 EOF
 docker compose config --quiet && echo "fichier valide"
 \`\`\`
@@ -183,7 +183,7 @@ docker compose config --quiet && echo "fichier valide"
   le garde-fou : une faute est visible avant qu'elle ne coûte.
 - Étape 4 : \`docker compose ls\` ne liste rien, \`docker ps\` ne montre pas les
   conteneurs. Le fichier **décrit**, il ne fait rien.
-- \`config\` affiche un réseau \`verdi_pile_verdi\` — un nom que tu n'as jamais écrit,
+- \`config\` affiche un réseau \`cabine_pile_cabine\` — un nom que tu n'as jamais écrit,
   construit à partir du nom du projet et du réseau déclaré.
 
 **Bon à retenir**
@@ -256,43 +256,43 @@ Le mot de passe s'affiche dans les journaux de la pile.`,
 docker compose version
 # -> Docker Compose version v5.1.0
 
-mkdir -p ~/verdi-pile && cd ~/verdi-pile
+mkdir -p ~/cabine-pile && cd ~/cabine-pile
 cat > compose.yaml <<'EOF'
 services:
   db:
     image: redis:alpine
-    container_name: verdi-db
+    container_name: cabine-db
     volumes:
-      - donnees-verdi:/data
+      - donnees-cabine:/data
 
   web:
     image: nginx:alpine
-    container_name: verdi
+    container_name: cabine
     ports:
       - "8080:80"
     networks:
-      - verdi
+      - cabine
     depends_on:
       - db
 
 networks:
-  verdi:
+  cabine:
 
 volumes:
-  donnees-verdi:
+  donnees-cabine:
 EOF
 
 docker compose config
-# -> name: verdi-pile
+# -> name: cabine-pile
 # -> services:
 # ->   db:
 # ->     volumes:
 # ->       - type: volume
-# ->         source: donnees-verdi
+# ->         source: donnees-cabine
 # ->         target: /data
 # ->   web:
 # ->     networks:
-# ->       verdi: {}
+# ->       cabine: {}
 # ->     ports:
 # ->       - mode: ingress
 # ->         target: 80
@@ -301,14 +301,14 @@ docker compose config
 # ->       db:
 # ->         condition: service_started
 # -> networks:
-# ->   verdi:
-# ->     name: verdi-pile_verdi
+# ->   cabine:
+# ->     name: cabine-pile_cabine
 
 docker compose ls
 # -> (rien : le fichier décrit, il ne lance pas)
 \`\`\`
 
-\`verdi-pile_verdi\` est le nom du réseau : le nom du projet, un tiret bas, puis le
+\`cabine-pile_cabine\` est le nom du réseau : le nom du projet, un tiret bas, puis le
 réseau déclaré. Compose l'a inventé, et il le recyclera tel quel.`,
       teaches: ['docker compose version', 'docker compose config', 'compose.yaml', 'clé services', 'depends_on'],
       fetchHint: `export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
@@ -334,7 +334,7 @@ connaître les commandes de la semaine passée.
 1. Lance toute la pile d'un coup. \`up\` veut dire « monte » :
 
 \`\`\`bash
-cd ~/verdi-pile
+cd ~/cabine-pile
 docker compose up -d
 docker compose ps
 \`\`\`
@@ -383,7 +383,7 @@ docker compose down
 docker volume ls
 \`\`\`
 
-Le volume \`donnees-verdi\` est-il encore là ?
+Le volume \`donnees-cabine\` est-il encore là ?
 
 **Ce que tu observes**
 
@@ -449,29 +449,29 @@ docker compose up journal; docker compose logs journal; docker compose down
         },
       ],
       solution: `\`\`\`bash
-cd ~/verdi-pile
+cd ~/cabine-pile
 
 docker compose up -d
-# -> Container verdi-db   Created
-# -> Container verdi      Created
-# -> Network verdi-pile_verdi  Created
-# -> Container verdi-db   Started
-# -> Container verdi      Started
+# -> Container cabine-db   Created
+# -> Container cabine      Created
+# -> Network cabine-pile_cabine  Created
+# -> Container cabine-db   Started
+# -> Container cabine      Started
 
 docker compose ps
 # -> NAME       IMAGE           STATUS
-# -> verdi-db   redis:alpine    Up 2 seconds
-# -> verdi      nginx:alpine    Up 2 seconds
+# -> cabine-db   redis:alpine    Up 2 seconds
+# -> cabine      nginx:alpine    Up 2 seconds
 
 curl -s -o /dev/null -w "%{http_code}\\n" http://localhost:8080
 # -> 200
 
 docker compose logs
-# -> verdi-db 1:1 ... * Ready to accept connections
-# -> verdi    1:1 ... start worker processes
+# -> cabine-db 1:1 ... * Ready to accept connections
+# -> cabine    1:1 ... start worker processes
 
 docker compose logs db
-# -> verdi-db 1:1 ... * Ready to accept connections
+# -> cabine-db 1:1 ... * Ready to accept connections
 
 docker compose exec web sh -c 'ping -c 1 db'
 # -> PING db (172.19.0.2): 56 data bytes
@@ -479,19 +479,19 @@ docker compose exec web sh -c 'ping -c 1 db'
 
 docker compose stop web
 docker compose ps
-# -> verdi-db  Up 30 seconds
-# -> verdi     Exited (0)
+# -> cabine-db  Up 30 seconds
+# -> cabine     Exited (0)
 docker compose start web
-# -> verdi  Started
+# -> cabine  Started
 
 docker compose down
-# -> Container verdi      Removed
-# -> Container verdi-db   Removed
-# -> Network verdi-pile_verdi  Removed
+# -> Container cabine      Removed
+# -> Container cabine-db   Removed
+# -> Network cabine-pile_cabine  Removed
 
 docker volume ls
 # -> DRIVER    VOLUME NAME
-# -> local     donnees-verdi     <- toujours là : les données ont survécu
+# -> local     donnees-cabine     <- toujours là : les données ont survécu
 \`\`\``,
       teaches: ['docker compose up', 'docker compose ps', 'docker compose logs', 'docker compose exec', 'docker compose down'],
       fetchHint: `export ARENA_TOKEN='dq_xxxxxxxxxxxxxxxx'
@@ -505,12 +505,12 @@ docker compose up journal; docker compose logs journal; docker compose down`,
       order: 3,
       title: 'Récupérer une pile entière',
       points: 600,
-      flag: 'FLAG{VERDI_PILE_RECOVERED_ON_CLEAN_MACHINE}',
+      flag: 'FLAG{CABINE_PILE_RECOVERED_ON_CLEAN_MACHINE}',
       estMinutes: 20,
       brief: `# Récupérer une pile entière
 
-Dernier jalon du chantier. L'administrateur part en vacances, et la machine de
-la librairie **meurt** : disque mort, ou réinstallation complète.
+Dernier jalon du vol. L'administrateur part en vacances, et la machine du
+le service de restauration **meurt** : disque mort, ou réinstallation complète.
 
 Il ne garde qu'une chose : les deux fichiers texte. Tout le reste — la base, le
 site, le réseau, les conteneurs — disparaît avec la machine.
@@ -522,7 +522,7 @@ La question du jour : **peut-on tout retrouver ?**
 1. Récupère la pile depuis la machine neuve. Un seul fichier à recopier :
 
 \`\`\`bash
-mkdir -p ~/verdi-pile && cd ~/verdi-pile
+mkdir -p ~/cabine-pile && cd ~/cabine-pile
 cp ~/compose-bien-sauvegarde.yaml compose.yaml
 \`\`\`
 
@@ -558,7 +558,7 @@ volume. Aucune commande de \`docker run\` n'a été tapée.
    relis :
 
 \`\`\`bash
-docker compose exec db redis-cli SET cle "la librairie tient debout"
+docker compose exec db redis-cli SET cle "le service de restauration tient debout"
 docker compose down
 docker compose up -d
 docker compose exec db redis-cli GET cle
@@ -573,7 +573,7 @@ docker compose exec db redis-cli GET cle
 - Étape 5 : les données ont traversé le cycle parce qu'elles vivent dans un
   volume nommé, pas dans un conteneur.
 
-**Ce que ça change pour la librairie**
+**Ce que ça change pour le service de restauration**
 
 C'est la réponse à la question posée à l'atelier 1 : « comment on fait si la
 machine est morte ? ». On ne restaure pas une image, on ne copie pas des
@@ -583,7 +583,7 @@ Un déploiement tient dans un fichier versionné. C'est tout.
 
 **Ce qui reste à faire — et c'est important**
 
-Le chantier s'arrête ici, mais la librairie n'est pas terminée. Trois choses ne
+Le vol s'arrête ici, mais le service de restauration n'est pas achevé. Trois choses ne
 sont pas faites, et l'élève doit les nommer :
 
 1. **La sauvegarde.** Un volume n'est pas une sauvegarde. Il est sur la même
@@ -632,7 +632,7 @@ docker compose up journal; docker compose logs journal; docker compose down
         {
           id: 'm7-03-sauvegarde',
           kind: 'boolean',
-          prompt: 'Un volume nommé constitue une sauvegarde des données de la librairie.',
+          prompt: 'Un volume nommé constitue une sauvegarde des données de bord.',
           answer: false,
           explanation: "Faux, et c'est la dernière chose à retenir du chantier. Le volume est sur la même machine que ce qu'il protège : si le disque meurt, il meurt avec. Il faut une copie **ailleurs**.",
           required: true,
@@ -653,7 +653,7 @@ docker compose up journal; docker compose logs journal; docker compose down
         },
       ],
       solution: `\`\`\`bash
-mkdir -p ~/verdi-pile && cd ~/verdi-pile
+mkdir -p ~/cabine-pile && cd ~/cabine-pile
 cp ~/compose-bien-sauvegarde.yaml compose.yaml
 
 docker compose ls
@@ -666,8 +666,8 @@ docker compose config --quiet && echo "valide"
 docker compose up -d
 docker compose ps
 # -> NAME       IMAGE           STATUS          PORTS
-# -> verdi-db   redis:alpine    Up 2 seconds
-# -> verdi      nginx:alpine    Up 2 seconds    0.0.0.0:8080->80/tcp
+# -> cabine-db   redis:alpine    Up 2 seconds
+# -> cabine      nginx:alpine    Up 2 seconds    0.0.0.0:8080->80/tcp
 
 docker compose down
 docker ps -a
@@ -676,11 +676,11 @@ docker compose up -d
 docker compose ps
 # -> les deux sont revenus, à l'identique
 
-docker compose exec db redis-cli SET cle "la librairie tient debout"
+docker compose exec db redis-cli SET cle "le service de restauration tient debout"
 docker compose down
 docker compose up -d
 docker compose exec db redis-cli GET cle
-# -> "la librairie tient debout"   (le volume a survécu au cycle)
+# -> "le service de restauration tient debout"   (le volume a survécu au cycle)
 
 docker compose down
 \`\`\``,

@@ -52,12 +52,12 @@ test('la somme des points de chaque module est un multiple de 100 et croît', op
 
 test('les six missions du cahier des charges sont conservées avec leur barème', opts, () => {
   const attendus = [
-    ['FLAG{VERDI_BOOT_PERSISTED_AFTER_RESTART}', 100, 'Le premier serveur de la librairie'],
+    ['FLAG{CABINE_UP_AFTER_DAEMON_RESTART}', 100, 'Le premier serveur de bord'],
     ['FLAG{ISOLATION_VERIFIED_PID1_INSIDE_AGENT}', 200, 'Le conteneur est isolé'],
-    ['FLAG{VERDI_STACK_SITE_AND_DB_ISOLATED}', 300, 'Deux services, une machine'],
-    ['FLAG{VERDI_1_0_REPRODUCIBLE_AND_TAGGED}', 400, 'La méthode de la librairie'],
-    ['FLAG{VERDI_VOLUME_NAMED_DURABLE_AND_LISTED}', 500, 'Le volume de Docker'],
-    ['FLAG{VERDI_PILE_RECOVERED_ON_CLEAN_MACHINE}', 600, 'Récupérer une pile entière'],
+    ['FLAG{CABINE_STACK_SITE_AND_DB_ISOLATED}', 300, 'Deux services, une machine'],
+    ['FLAG{CABINE_1_0_REPRODUCIBLE_AND_TAGGED}', 400, 'La méthode de la cabine'],
+    ['FLAG{CABINE_VOLUME_NAMED_DURABLE_AND_LISTED}', 500, 'Le volume de Docker'],
+    ['FLAG{CABINE_PILE_RECOVERED_ON_CLEAN_MACHINE}', 600, 'Récupérer une pile entière'],
   ];
   for (const [flag, points, title] of attendus) {
     const q = pack.byFlag.get(flag);
