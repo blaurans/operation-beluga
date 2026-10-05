@@ -1,0 +1,1114 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Opération Beluga — feuille de style unique.
+
+   Thème sombre « cabine de bord ». La palette est celle de l'ancien thème, à
+   deux exceptions près, et c'est délibéré : `--cyan` et `--emerald` portent
+   maintenant une autre histoire que celle qu'ils portaient.
+
+     --cyan     l'instrumentation : ce qui est *vivant et stable* — le fil de
+                l'eau, le plan, un atelier terminé. C'est la couleur de la
+                cabine de nuit, et elle se lit vite sur un écran sombre.
+     --emerald  le **succès** : « stabilisé », « compris du premier coup », le
+                mode Calme. Une seule chose à retenir, c'est qu'un élève qui
+                cherche « est-ce que j'ai réussi ? » doit trouver la même
+                couleur partout.
+
+   `--amber` garde son rôle d'avertissement : les indices payants, le mode
+   Turbulence, ce qui coûte. Le rose et le violet n'ont pas de rôle propre et
+   sont conservés par prudence — les supprimer ferait un diff de 40 Ko pour rien.
+
+   Aucune dépendance externe : pas de CDN, pas de webfont, fonctionne hors ligne.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #070b12;
+  --bg-2: #0b1220;
+  --panel: #0f1725;
+  --panel-2: #131e30;
+  --line: #1e2b42;
+  --line-soft: #17233a;
+
+  --fg: #e6edf7;
+  --fg-dim: #8ba0bd;
+  --fg-faint: #5d7192;
+
+  --cyan: #22d3ee;
+  --amber: #fbbf24;
+  --emerald: #34d399;
+  --rose: #fb7185;
+  --violet: #a78bfa;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+  --shadow: 0 18px 50px -22px rgb(0 0 0 / 0.9);
+}
+
+* { box-sizing: border-box; }
+
+/*
+ * `[hidden]` doit gagner, partout, sans exception.
+ *
+ * Le navigateur applique `display: none` à `[hidden]` depuis sa propre feuille
+ * de style. Toute règle d'auteur qui fixe un `display` — `.admin-gate { display:
+ * grid }`, un jour un `.grille { display: flex }` — a la même spécificité et
+ * l'emporte, parce que la feuille d'auteur passe après. Résultat : l'élément
+ * reste visible alors que le JavaScript croit l'avoir masqué.
+ *
+ * C'est arrivé sur l'écran du mot de passe : après connexion, `#gate` restait
+ * affiché au-dessus du tableau de la classe. Le `!important` est justifié — il
+ * ne porte que sur `display`, et il rend la règle impossible à contourner par
+ * mégarde, ce qu'un simple `[hidden] { display: none }` ne garantit pas.
+ */
+[hidden] { display: none !important; }
+
+/*
+ * Présent dans l'accessibilité, invisible à l'écran.
+ *
+ * `[hidden]` ne convient pas ici : `display: none` retire l'élément de
+ * l'ordre de tabulation **et** de l'accessibilité, et un gestionnaire de mots
+ * passe ne le voit plus. Il faut donc un élément de taille nulle, retiré du
+ * flux — d'où le `position: absolute`, qui le sort de l'écran sans le rendre
+ * invisible aux outils d'accessibilité et aux gestionnaires de mots de passe.
+ *
+ * Utilisé pour le champ d'identifiant du formulaire d'administration : les
+ * navigateurs refusent d'associer un formulaire à un gestionnaire de mots de
+ * passe s'il n'a qu'un champ `password`.
+ *
+ * Les `!important` ne sont pas un caprice. Une classe utilitaire doit
+ * gagner contre **n'importe quelle** règle contextuelle, or le formulaire
+ * d'administration a sa propre règle d'aspect — `.admin-card input`
+ * (spécificité 0,1,1) l'emporte sur `.sr-only` (0,1,0). Sans `!important`, le
+ * champ s'étalait sur 1385 px avec son fond et sa bordure : invisible pour
+ * l'accessibilité, très visible pour l'œil. C'est exactement la raison du
+ * `!important` de `[hidden]` ci-dessus, appliquée à une classe et non à un
+ * attribut.
+ */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 620px at 12% -8%, #0d2b3d 0%, transparent 60%),
+    radial-gradient(900px 520px at 92% 4%, #2a1f0b 0%, transparent 58%),
+    var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { line-height: 1.2; margin: 0; letter-spacing: -0.02em; }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, pre, .mono { font-family: var(--mono); }
+
+.wrap { width: min(1240px, 100% - 2.5rem); margin-inline: auto; }
+.dim { color: var(--fg-dim); }
+
+/* ───────────────────────────────────────────────────────────────── boutons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--fg);
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .08s, box-shadow .15s;
+  white-space: nowrap;
+}
+.btn:hover { border-color: #2f4568; background: #182437; text-decoration: none; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, #0e7490, #0891b2);
+  border-color: #155e75;
+  color: #ecfeff;
+  box-shadow: 0 10px 26px -14px #0891b2;
+}
+.btn-primary:hover { background: linear-gradient(135deg, #0891b2, #06b6d4); border-color: #0e7490; }
+
+.btn-ghost { background: transparent; }
+.btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+.btn-lg { padding: 0.8rem 1.6rem; font-size: 1rem; width: 100%; justify-content: center; }
+
+.linkish {
+  background: none; border: 0; padding: 0;
+  color: var(--fg-dim); font: inherit; font-size: 0.8rem;
+  cursor: pointer; text-decoration: underline dotted;
+}
+.linkish:hover { color: var(--cyan); }
+
+/* ═══════════════════════════════════════════════════════════════ PORTAL */
+
+.portal-head {
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgb(11 18 32 / .96), rgb(11 18 32 / .72));
+  backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 20;
+}
+.head-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1.5rem; padding: 1.1rem 0; flex-wrap: wrap;
+}
+
+.brand {
+  font-family: var(--mono);
+  font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.brand .bolt { filter: saturate(1.3); }
+.brand .sep { color: #2f4568; }
+.brand .thin { color: var(--fg-dim); font-weight: 500; font-size: 0.72em; letter-spacing: .1em; }
+
+.tagline { margin: 0.2rem 0 0; color: var(--fg-dim); font-size: 0.85rem; }
+.head-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+.live-dot {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--emerald);
+  background: rgb(52 211 153 / .1);
+  border: 1px solid rgb(52 211 153 / .25);
+  padding: 0.3rem 0.7rem; border-radius: 999px;
+}
+/* L'animation ne tourne que si la connexion est vraiment vivante : un point
+   qui clignote en permanence ne distingue plus « connecté » de « bloqué ». */
+.live-dot i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--emerald);
+  animation: pulse 2s infinite;
+}
+.live-dot.off { color: var(--amber); background: rgb(251 191 36 / .1); border-color: rgb(251 191 36 / .25); }
+.live-dot.off i { background: var(--amber); animation: none; opacity: .85; }
+.live-dot.pending i { animation: pulse 1.1s infinite; }
+.live-dot.pending { color: var(--cyan); background: rgb(34 211 238 / .1); border-color: rgb(34 211 238 / .25); }
+.live-dot.pending i { background: var(--cyan); }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+.portal-body { padding: 2rem 0 3rem; display: grid; gap: 1.6rem; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.panel-amber { border-color: rgb(251 191 36 / .22); }
+.panel-emerald { border-color: rgb(52 211 153 / .22); }
+.panel-cyan { border-color: rgb(34 211 238 / .22); }
+
+.panel-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+.panel-head h2 { font-size: 1.02rem; letter-spacing: .04em; text-transform: uppercase; }
+.panel-amber .panel-head h2 { color: var(--amber); }
+.panel-emerald .panel-head h2 { color: var(--emerald); }
+.panel-cyan .panel-head h2 { color: var(--cyan); }
+.panel-head .ico { margin-right: 0.3rem; }
+.panel-sub { color: var(--fg-dim); font-size: 0.78rem; }
+
+/* ── podium */
+
+/* `#podium` garde son identifiant historique mais ne contient plus de podium :
+   il accueille le résumé de cohorte. Le nom n'a pas changé pour ne pas toucher
+   au HTML — mais ce qui est dedans, oui. */
+.podium-empty { text-align: center; color: var(--fg-dim); padding: 1rem; }
+
+/* Le bandeau de cohorte remplace le podium : trois chiffres, pas un classement. */
+.cohort {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 0;
+}
+.cohort-card {
+  display: grid; gap: 0.1rem; align-content: start;
+  padding: 0.8rem 0.9rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.cohort-v { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; color: var(--cyan); }
+.cohort-k { font-size: 0.78rem; color: var(--fg-dim); }
+.cohort-s { font-size: 0.72rem; color: var(--fg-faint); margin-top: 0.15rem; }
+
+/* « Où est-ce que ça coince ? » — l'atelier le plus consommé d'indices. */
+.cohort-alert {
+  display: grid; gap: 0.1rem; align-content: start;
+  padding: 0.8rem 0.9rem;
+  background: rgb(251 191 36 / .07);
+  border: 1px solid rgb(251 191 36 / .28);
+  border-radius: var(--radius-sm);
+}
+.cohort-alert-k { font-size: 0.78rem; color: var(--fg-dim); }
+.cohort-alert-v { font-family: var(--mono); font-size: 1.15rem; font-weight: 700; color: var(--amber); }
+.cohort-alert-s { font-size: 0.72rem; color: var(--fg-faint); }
+
+/* Un ratio dans le tableau des joueurs : barre + pourcentage. */
+.ratio-cell { min-width: 92px; }
+.ratio {
+  display: inline-grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+.ratio-bar {
+  height: 6px; border-radius: 3px; min-width: 3px;
+  background: var(--line);
+  position: relative;
+}
+.ratio-bar::after {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 3px;
+  background: var(--emerald);
+  /* La largeur est posée en JS sur l'élément ; le dégradé donne le relief. */
+  width: inherit;
+}
+.ratio-bar[data-level='ok']::after { background: linear-gradient(90deg, var(--emerald), rgb(52 211 153 / .6)); }
+.ratio-bar[data-level='mid']::after { background: linear-gradient(90deg, var(--amber), rgb(251 191 36 / .6)); }
+.ratio-bar[data-level='low']::after { background: linear-gradient(90deg, var(--rose), rgb(251 113 133 / .6)); }
+.ratio-n { font-family: var(--mono); font-size: 0.74rem; color: var(--fg-dim); min-width: 30px; }
+
+/* ── tableaux */
+
+.table-scroll { overflow-x: auto; }
+.board { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.board th {
+  text-align: left; font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-dim); font-weight: 600; padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: rgb(0 0 0 / .18);
+}
+.board td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.board tbody tr:last-child td { border-bottom: 0; }
+.board tbody tr { transition: background .12s; }
+.board tbody tr:hover { background: rgb(255 255 255 / .022); }
+.board.compact td { padding: 0.45rem 0.8rem; font-size: 0.82rem; }
+
+.c-rank { width: 62px; text-align: center !important; font-family: var(--mono); }
+.c-mid { text-align: center !important; }
+.c-right { text-align: right !important; }
+.team-cell { font-weight: 600; }
+.score-cell { font-family: var(--mono); font-weight: 700; color: var(--amber); font-size: 1rem; }
+.empty { text-align: center; color: var(--fg-dim); padding: 2rem !important; font-style: italic; }
+
+/* Poste du dernier appel : monospace, discret, aligné à droite. */
+.ip-cell { font-family: var(--mono); font-size: 0.78rem; color: var(--fg-dim); white-space: nowrap; }
+
+.badge {
+  display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.5rem;
+  border-radius: 999px; font-size: 0.66rem; font-weight: 700; letter-spacing: .06em;
+}
+.badge-done { background: rgb(52 211 153 / .14); color: var(--emerald); border: 1px solid rgb(52 211 153 / .3); }
+.badge-run { background: rgb(251 191 36 / .12); color: var(--amber); border: 1px solid rgb(251 191 36 / .25); }
+
+/* pastilles de quête */
+.qbadges { display: inline-flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 340px; }
+.qdot {
+  display: inline-grid; place-items: center; width: 21px; height: 21px;
+  border-radius: 5px; font-size: 0.63rem; font-style: normal;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--fg-faint);
+}
+.qdot.on { background: rgb(52 211 153 / .18); border-color: rgb(52 211 153 / .45); color: var(--emerald); font-weight: 700; }
+.progress-text { display: block; color: var(--fg-dim); font-size: 0.75rem; margin-top: 0.3rem; font-family: var(--mono); }
+
+/* ── inscription express */
+
+/* Quatre colonnes depuis que le formulaire rapide a un champ secret : pseudo,
+   secret, mode, bouton. Le `1fr` va au pseudo — c'est le seul champ dont la
+   largeur aide à juger du texte. */
+.reg-row { display: grid; grid-template-columns: 1fr 1fr 260px auto; gap: 0.7rem; padding: 1.1rem 1.25rem 0; }
+.reg-msg { margin: 0.7rem 1.25rem 0; font-size: 0.82rem; min-height: 1.2rem; word-break: break-word; }
+.reg-err { color: var(--rose); }
+/* « Ce pseudo est déjà pris » n'est pas une erreur : c'est une reprise de
+   session. L'ambre dit « fais ceci », le rouge dit « renonce ». */
+.reg-warn { color: var(--amber); }
+
+/* L'explication sous un champ : ce que vaut cette saisie, et ce qu'il arrive
+   si on s'en passe. */
+.field-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem; line-height: 1.5; color: var(--fg-dim);
+}
+.field-note b { color: var(--amber); }
+.gate-form .field-note { margin: -0.2rem 0 0.4rem; }
+.reg-row .field-note { margin: 0.2rem 0 0; }
+
+input[type="text"], select {
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--fg);
+  padding: 0.55rem 0.8rem; border-radius: var(--radius-sm); font: inherit; font-size: 0.9rem;
+  width: 100%;
+}
+input:focus, select:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgb(34 211 238 / .14); }
+input::placeholder { color: var(--fg-faint); }
+
+.curl-help { padding: 0 1.25rem 1.1rem; }
+.curl-help summary { cursor: pointer; color: var(--fg-dim); font-size: 0.82rem; }
+.curl-help summary:hover { color: var(--cyan); }
+.curl-help pre {
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 0.9rem; overflow-x: auto; margin: 0.7rem 0 0; font-size: 0.78rem; line-height: 1.5;
+  color: #bfe9f5;
+}
+
+.portal-foot {
+  display: flex; gap: 0.6rem; justify-content: center; color: var(--fg-faint);
+  font-size: 0.8rem; padding-top: 0.4rem;
+}
+
+/* ═══════════════════════════════════════════════════════ JEU : inscription */
+
+.gate { min-height: calc(100vh - 0px); display: grid; place-items: center; padding: 2.5rem 1.25rem; }
+.gate-card { width: min(1000px, 100%); }
+
+.gate-brand {
+  font-family: var(--mono); font-size: clamp(1.5rem, 4vw, 2.4rem); font-weight: 800;
+  text-align: center; letter-spacing: -0.02em;
+}
+.gate-brand span { filter: saturate(1.3); }
+.gate-sub { text-align: center; color: var(--fg-dim); margin: 0.5rem auto 2rem; max-width: 60ch; }
+
+.mode-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; }
+
+.mode {
+  text-align: left; font: inherit; color: var(--fg); cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 1.4rem;
+  display: grid; gap: 0.75rem; align-content: start;
+  transition: border-color .16s, transform .12s, box-shadow .16s;
+}
+.mode:hover { transform: translateY(-3px); }
+.mode-comp:hover { border-color: rgb(251 191 36 / .55); box-shadow: 0 20px 50px -26px rgb(251 191 36 / .5); }
+.mode-norm:hover { border-color: rgb(52 211 153 / .55); box-shadow: 0 20px 50px -26px rgb(52 211 153 / .5); }
+.mode:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.mode-top { display: flex; align-items: center; justify-content: space-between; }
+.mode-ico { font-size: 1.7rem; }
+.mode-badge {
+  font-family: var(--mono); font-size: 0.66rem; font-weight: 700; letter-spacing: .14em;
+  padding: 0.2rem 0.6rem; border-radius: 999px;
+  /* Le libellé reste lisible dans la source : « Turbulence », pas « TURBULENCE ».
+     La casse s'affiche ici, elle n'est pas écrite deux fois. */
+  text-transform: uppercase;
+}
+.mode-comp .mode-badge { background: rgb(251 191 36 / .14); color: var(--amber); border: 1px solid rgb(251 191 36 / .3); }
+.mode-norm .mode-badge { background: rgb(52 211 153 / .14); color: var(--emerald); border: 1px solid rgb(52 211 153 / .3); }
+.mode h3 { font-size: 1.15rem; }
+.mode ul { margin: 0; padding-left: 1.1rem; color: var(--fg-dim); font-size: 0.88rem; display: grid; gap: 0.3rem; }
+.mode ul b { color: var(--fg); }
+.mode-go { font-weight: 700; font-size: 0.88rem; margin-top: 0.3rem; }
+.mode-comp .mode-go { color: var(--amber); }
+.mode-norm .mode-go { color: var(--emerald); }
+
+.gate-form {
+  margin: 1.5rem auto 0; max-width: 440px; display: grid; gap: 0.5rem;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.4rem;
+}
+.gate-form label { font-size: 0.8rem; color: var(--fg-dim); font-weight: 600; }
+.gate-form .opt { font-weight: 400; color: var(--fg-faint); }
+.gate-form input { margin-bottom: 0.3rem; }
+.gate-mode { font-size: 0.84rem; color: var(--fg-dim); margin: 0.2rem 0 0.6rem; }
+.gate-mode b { color: var(--fg); }
+.gate-form .reg-msg { margin: 0.4rem 0 0; }
+
+/* ═══════════════════════════════════════════════════════ JEU : parcours */
+
+.play-head {
+  position: sticky; top: 0; z-index: 20;
+  background: rgb(7 11 18 / .94); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.play-id { display: flex; align-items: center; gap: 0.7rem; }
+.team-name { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; }
+.chip { font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; padding: 0.22rem 0.6rem; border-radius: 999px; }
+.chip-amber { background: rgb(251 191 36 / .14); color: var(--amber); border: 1px solid rgb(251 191 36 / .3); }
+.chip-emerald { background: rgb(52 211 153 / .14); color: var(--emerald); border: 1px solid rgb(52 211 153 / .3); }
+.since { font-size: 0.72rem; color: var(--fg-faint); font-family: var(--mono); }
+
+/* Jeton : toujours visible, copiable en un clic. */
+.token-chip {
+  background: rgb(167 139 250 / .1); border: 1px solid rgb(167 139 250 / .3);
+  color: #c4b5fd; border-radius: 999px; padding: 0.22rem 0.7rem;
+  font-family: var(--mono); font-size: 0.72rem; cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.token-chip:hover { background: rgb(167 139 250 / .2); }
+.token-chip.ok { background: rgb(52 211 153 / .18); border-color: rgb(52 211 153 / .45); color: var(--emerald); }
+.token-chip:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.play-stats { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+.stat { display: grid; }
+.stat-k { font-size: 0.63rem; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); }
+.stat-v { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; }
+#scoreVal { color: var(--amber); }
+#rankVal { color: var(--cyan); }
+
+.progress-rail { height: 3px; background: var(--line-soft); }
+#rail { display: flex; height: 100%; }
+.rail-seg { flex: 1; border-right: 1px solid var(--bg); }
+.rail-seg.on { background: var(--emerald); }
+.rail-seg.next { background: var(--amber); animation: pulse 2.4s infinite; }
+
+.play-body {
+  display: grid; grid-template-columns: 320px 1fr; gap: 1.4rem;
+  padding: 1.5rem 0 3rem; align-items: start;
+}
+
+.side-col {
+  position: sticky; top: 5.5rem;
+  display: grid; gap: 0.8rem;
+  max-height: calc(100vh - 7rem); overflow-y: auto; padding-right: 0.3rem;
+}
+
+/* ── carnet de bord */
+
+/*
+  La vue d'ensemble du vol, au-dessus du plan.
+
+  Elle est décorative par construction — elle ne mesure rien et n'entre dans
+  aucun ratio. Sa seule information utile est « cet atelier est terminé », et
+  elle est entièrement dérivée de ce que le serveur renvoie déjà. Aucune requête
+  en plus, donc rien à invalider.
+
+  Le vert n'est atteint qu'en finissant l'atelier, jamais en le sautant : c'est
+  ce qui rend la ligne lisible sans être un objectif à contourner.
+*/
+.logbook {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 0.9rem;
+}
+/*
+  Le titre et le compteur sur une seule ligne, sans se chevaucher.
+
+  `flex-wrap` + `white-space: nowrap` sur le compteur, parce que la colonne fait
+  320 px : « CARNET DE BORD » et « 0/27 systèmes stabilisés » ne tiennent pas
+  côte à côte. Sans le `nowrap`, le compteur passe à la ligne et le titre
+  descend sur deux lignes — les deux se superposent alors, et il n'y a aucune
+  erreur pour le signaler. C'est ce que montrait la première capture.
+
+  Le repli sur deux lignes est correct : le titre reste au-dessus, le compteur
+  en dessous. Ce qui ne l'est pas, c'est le chevauchement.
+*/
+.logbook-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: 0.15rem 0.6rem; padding: 0 0.3rem;
+}
+.logbook-head h3 { font-size: 0.72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; }
+.logbook-count { margin: 0; font-family: var(--mono); font-size: 0.75rem; color: var(--cyan); white-space: nowrap; }
+.logbook-list { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; gap: 2px; }
+
+.logbook-line {
+  display: grid; grid-template-columns: 1.4em 1fr auto; gap: 0.45rem; align-items: baseline;
+  padding: 0.3rem 0.35rem; border-radius: 5px; font-size: 0.78rem;
+  color: var(--fg-dim); cursor: pointer;
+  border: 1px solid transparent;
+}
+/* Le focus clavier doit être visible : les lignes sont cliquables, donc
+  atteignables au Tab, et un élève au clavier n'a pas le droit de deviner. */
+.logbook-line:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.logbook-line:hover { background: rgb(0 0 0 / .16); color: var(--fg); }
+.logbook-line.ok { color: var(--emerald); }
+.logbook-ico { font-size: 0.8rem; line-height: 1.4; }
+.logbook-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logbook-state { font-family: var(--mono); font-size: 0.72rem; color: var(--fg-faint); }
+.logbook-line.ok .logbook-state { color: var(--emerald); font-weight: 700; }
+
+/* L'atterrissage est la seule ligne qui ne soit pas un atelier : elle s'allume
+  quand TOUT le jeu est fait. Un liseré la sépare, pour qu'on ne la prenne pas
+  pour un huitième module — elle n'est pas ouvrable comme les autres. */
+.logbook-final {
+  margin-top: 0.35rem; padding-top: 0.45rem;
+  border-top: 1px solid var(--line-soft); border-radius: 0 0 5px 5px;
+  cursor: default;
+}
+.logbook-final:hover { background: none; color: var(--fg-dim); }
+.logbook-final.ok { color: var(--cyan); }
+.logbook-final.ok .logbook-state { color: var(--cyan); }
+
+/* ── historique */
+
+.history { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.9rem; }
+.history-title { font-size: 0.8rem; margin-bottom: 0.6rem; color: var(--fg-dim); }
+.history-list { display: grid; gap: 2px; }
+.history-row {
+  display: grid; grid-template-columns: 1.6em 1fr auto; gap: 0.45rem; align-items: baseline;
+  font-size: 0.76rem; padding: 0.28rem 0.3rem; border-radius: 5px;
+}
+.history-row:nth-child(odd) { background: rgb(0 0 0 / .16); }
+.h-num { font-family: var(--mono); color: var(--fg-faint); }
+.h-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-time { font-family: var(--mono); color: var(--cyan); font-size: 0.72rem; }
+.h-pts { font-family: var(--mono); color: var(--amber); font-weight: 700; }
+.h-plain { color: var(--emerald); font-family: var(--sans); font-weight: 400; }
+.history-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between;
+  gap: 0.2rem 0.9rem;
+  margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid var(--line-soft);
+  font-family: var(--mono); font-size: 0.8rem; font-weight: 700; color: var(--amber);
+}
+/* Le bilan tient sur une ligne quand il y a la place, et se replie sinon. */
+.history-foot > span { white-space: nowrap; }
+
+/* ── plan */
+
+.quest-map { display: grid; gap: 0.6rem; }
+.map-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 0.3rem; }
+.map-head h3 { font-size: 0.72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-dim); }
+.map-count { margin: 0; font-family: var(--mono); font-size: 0.75rem; color: var(--cyan); }
+
+.map-next {
+  display: grid; gap: 0.3rem;
+  background: linear-gradient(135deg, rgb(251 191 36 / .1), rgb(34 211 238 / .06));
+  border: 1px solid rgb(251 191 36 / .28);
+  border-radius: var(--radius-sm); padding: 0.7rem;
+}
+.map-next-k { font-size: 0.65rem; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); font-weight: 700; }
+.map-next-t { font-size: 0.88rem; font-weight: 600; }
+.map-next-p { font-family: var(--mono); font-size: 0.72rem; color: var(--fg-dim); }
+.map-next .btn { justify-self: start; margin-top: 0.2rem; }
+
+.map-mod { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.map-mod-head {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  background: rgb(0 0 0 / .2); border: 0; color: var(--fg);
+  padding: 0.55rem 0.7rem; font: inherit; font-size: 0.83rem; cursor: default; text-align: left;
+}
+.mod-ico { font-size: 0.95rem; }
+.mod-title { font-weight: 600; flex: 1; }
+.mod-pts { font-family: var(--mono); font-size: 0.68rem; color: var(--fg-dim); }
+
+.mod-quests { list-style: none; margin: 0; padding: 0; }
+.qitem {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  background: none; border: 0; border-top: 1px solid var(--line-soft);
+  color: var(--fg); font: inherit; font-size: 0.82rem; text-align: left;
+  padding: 0.45rem 0.7rem; cursor: pointer; transition: background .12s;
+}
+.qitem:hover:not(:disabled) { background: rgb(255 255 255 / .03); }
+.qitem:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+.qitem.locked { opacity: .42; cursor: not-allowed; }
+.qitem.done .qname { color: var(--fg-dim); text-decoration: line-through; text-decoration-color: rgb(52 211 153 / .5); }
+.qitem.active { background: rgb(34 211 238 / .1); box-shadow: inset 3px 0 0 var(--cyan); }
+.qnum { font-family: var(--mono); font-size: 0.7rem; color: var(--fg-faint); min-width: 1.4em; }
+.qname { flex: 1; }
+.qpts, .qlock, .qok { font-size: 0.72rem; color: var(--fg-dim); font-family: var(--mono); }
+.qok { color: var(--emerald); }
+
+/* ── panneau de quête */
+
+.quest-panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 1.6rem; box-shadow: var(--shadow); min-width: 0;
+}
+
+.quest-head { border-bottom: 1px solid var(--line-soft); padding-bottom: 1rem; margin-bottom: 1.1rem; }
+.quest-mod { font-size: 0.72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--cyan); font-weight: 700; }
+.quest-head h2 { font-size: clamp(1.25rem, 2.6vw, 1.7rem); margin: 0.3rem 0 0.6rem; }
+.quest-tags { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+.tag { font-size: 0.72rem; font-family: var(--mono); padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); color: var(--fg-dim); }
+.tag-star { color: var(--fg-faint); border-color: var(--line); }
+.tag-flagship { color: var(--amber); background: rgb(251 191 36 / .12); border-color: rgb(251 191 36 / .45); font-weight: 700; }
+.tag-done { color: var(--emerald); border-color: rgb(52 211 153 / .3); }
+
+.teaches { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+.teaches-k { font-size: 0.7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-faint); }
+.teach {
+  font-size: 0.74rem; font-family: var(--mono); padding: 0.15rem 0.55rem;
+  border-radius: 999px; background: rgb(167 139 250 / .1); color: #c4b5fd; border: 1px solid rgb(167 139 250 / .25);
+}
+
+/* énoncé (markdown rendu) */
+.brief { font-size: 0.96rem; }
+.brief h3 { font-size: 1.05rem; margin: 1.2rem 0 0.5rem; color: var(--fg); }
+.brief h3:first-child { margin-top: 0; }
+.brief p { margin: 0.6rem 0; }
+.brief ul, .brief ol { margin: 0.6rem 0; padding-left: 1.4rem; display: grid; gap: 0.35rem; }
+.brief li::marker { color: var(--cyan); }
+.brief code {
+  background: rgb(34 211 238 / .1); color: #a5f3fc;
+  padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.86em;
+}
+.brief pre {
+  background: #060a11; border: 1px solid var(--line); border-left: 3px solid var(--cyan);
+  border-radius: var(--radius-sm); padding: 0.85rem 1rem; overflow-x: auto;
+  margin: 0.8rem 0; font-size: 0.86rem; line-height: 1.55;
+}
+.brief pre code { background: none; color: #d6f7ff; padding: 0; }
+
+/*
+  L'introduction d'atelier : le fil rouge d'Opération Beluga.
+
+  Elle est visuellement distincte de l'énoncé (`brief`) sans l'être assez pour
+  ressembler à une consigne de plus. Un liseré à gauche plutôt qu'un cadre : la
+  différence est dans la position dans la page — elle vient **avant** « tu vas
+  apprendre » et l'énoncé, et rien d'autre n'est dans cette colonne.
+
+  Le rendu Markdown est celui de `public/md.js`, et le validateur de contenu
+  refuse toute syntaxe qu'il ne sait pas rendre. Une règle non supportée
+  disparaît **en silence** : c'est le défaut de rendu le plus facile à manquer,
+  et la raison pour laquelle la validation de `meta.story` passe par les mêmes
+  garde-fous que `brief`.
+*/
+.module-story {
+  position: relative;
+  margin: 0 0 1.2rem; padding: 0.9rem 1rem 0.9rem 1.15rem;
+  background: linear-gradient(135deg, rgb(34 211 238 / .07), rgb(34 197 94 / .04));
+  border: 1px solid var(--line-soft); border-left: 3px solid var(--cyan);
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem; color: var(--fg-dim);
+}
+.module-story-k {
+  font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--cyan); font-weight: 700; margin-bottom: 0.5rem;
+}
+.module-story h3 { font-size: 1rem; margin: 0 0 0.5rem; color: var(--fg); }
+.module-story p { margin: 0.55rem 0; }
+.module-story ul, .module-story ol { margin: 0.55rem 0; padding-left: 1.3rem; display: grid; gap: 0.3rem; }
+.module-story li::marker { color: var(--cyan); }
+.module-story code {
+  background: rgb(34 211 238 / .1); color: #a5f3fc;
+  padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.86em;
+}
+.module-story strong { color: var(--fg); }
+
+.aid { margin: 1.4rem 0 0; padding-top: 1.1rem; border-top: 1px dashed var(--line); }
+.hint-box { display: grid; gap: 0.6rem; margin-top: 0.8rem; }
+.hint {
+  background: rgb(251 191 36 / .07); border: 1px solid rgb(251 191 36 / .22);
+  border-radius: var(--radius-sm); padding: 0.7rem 0.9rem;
+}
+.hint-n { display: block; font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); font-weight: 700; margin-bottom: 0.3rem; }
+.hint p { margin: 0; font-size: 0.9rem; }
+.hint pre { margin: 0.5rem 0 0; }
+
+.checkpoint {
+  margin-top: 1.2rem; padding: 0.9rem 1.1rem;
+  background: rgb(52 211 153 / .06); border: 1px solid rgb(52 211 153 / .2);
+  border-radius: var(--radius-sm);
+}
+.cp-k { font-size: 0.72rem; letter-spacing: .06em; color: var(--emerald); font-weight: 700; }
+.checkpoint p { margin: 0.3rem 0 0; font-size: 0.9rem; }
+
+/* ── compréhension vérifiée
+   Le bloc qui distingue ce jeu d'un jeu de devinette de flags. Il est placé
+   entre le point de contrôle et le formulaire : c'est l'ordre dans lequel on
+   vit le travail — on le fait, on vérifie qu'on l'a compris, puis on valide. */
+.compr {
+  margin-top: 1.3rem; padding: 1.1rem 1.2rem;
+  background: rgb(167 139 250 / .05);
+  border: 1px solid rgb(167 139 250 / .22);
+  border-radius: var(--radius-sm);
+}
+.compr-t { font-size: 1rem; color: #c4b5fd; margin: 0; }
+.compr-sub { font-size: 0.82rem; color: var(--fg-dim); margin: 0.25rem 0 0.9rem; }
+.compr-qs { display: grid; gap: 1rem; }
+
+.qcm {
+  display: grid; gap: 0.5rem;
+  padding: 0.85rem 0.95rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+/* Une question facultative est un élargissement, pas une évaluation : elle est
+   en retrait pour qu'on ne la confonde pas avec ce qui est noté. */
+.qcm-opt { background: transparent; border-style: dashed; opacity: .88; }
+
+.qcm-p { font-size: 0.92rem; margin: 0; }
+.qcm-opt .qcm-p::before {
+  content: 'facultatif · ';
+  font-size: 0.72rem; color: var(--fg-faint);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+
+.qcm-choices { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.qcm-choice {
+  font: inherit; font-size: 0.86rem;
+  padding: 0.42rem 0.85rem;
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .06s;
+}
+.qcm-choice:hover:not(:disabled) {
+  border-color: rgb(167 139 250 / .55);
+  background: rgb(167 139 250 / .08);
+}
+.qcm-choice:active:not(:disabled) { transform: translateY(1px); }
+.qcm-choice:disabled { cursor: default; opacity: .55; }
+/* La bonne réponse reste lisible après coup — c'est ce qui enseigne. Les
+   mauvaises restent atténuées : on ne repeint pas l'écran en rouge. */
+.qcm-choice.ok {
+  opacity: 1;
+  border-color: var(--emerald);
+  background: rgb(52 211 153 / .14);
+  color: #a7f3d0;
+}
+
+.qcm-fb { display: grid; gap: 0.3rem; min-height: 1.1rem; }
+.qcm-fb p { margin: 0; font-size: 0.82rem; }
+/* La justification est le cœur du dispositif : elle arrive après la bonne
+   réponse, jamais avant. */
+.qcm-fb .why {
+  padding: 0.55rem 0.75rem;
+  background: var(--bg-2);
+  border-left: 2px solid rgb(167 139 250 / .5);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--fg-dim);
+  font-size: 0.84rem;
+}
+
+/* réflexe : un mot à restituer, pas une commande à recopier */
+.qcm-recall { border-color: rgb(34 211 238 / .3); }
+.qcm-recall .qcm-p::before {
+  content: 'réflexe · ';
+  font-size: 0.72rem; color: var(--cyan);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.recall-form { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.recall-input {
+  flex: 1 1 220px; min-width: 0;
+  font: inherit; font-family: var(--mono); font-size: 0.9rem;
+  padding: 0.42rem 0.7rem;
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.recall-input:focus { outline: none; border-color: var(--cyan); }
+.recall-input:disabled { opacity: .6; }
+
+/* confirmation de validation : la maîtrise, lisible */
+.success-count {
+  font-family: var(--mono); font-size: 0.95rem; color: var(--cyan);
+  margin-top: 0.35rem;
+}
+.success-time { font-size: 0.8rem; color: var(--fg-dim); margin-top: 0.3rem; }
+.success-go { margin-top: 0.7rem; }
+/* Rappel des indices déjà pris, après un rechargement. */
+.hint-recap {
+  font-size: 0.82rem; color: var(--fg-dim);
+  margin: 0 0 0.6rem; padding-left: 0.6rem;
+  border-left: 2px solid var(--line);
+}
+.success .success-head { font-size: 0.95rem; }
+.success p { margin: 0.25rem 0 0; font-size: 0.86rem; color: var(--fg-dim); }
+.next-box p { margin: 0 0 0.5rem; }
+
+/* soumission */
+.submit-box {
+  margin-top: 1.5rem; padding: 1.2rem;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius);
+  border-color: rgb(251 191 36 / .3);
+}
+.submit-title { font-size: 0.95rem; margin-bottom: 0.3rem; }
+.submit-sub { margin: 0 0 0.9rem; font-size: 0.82rem; color: var(--fg-dim); }
+
+/* Commande de récupération du mot de passe : c'est le cœur du jeu, elle
+   mérite d'être mise en avant plutôt que noyée dans l'énoncé. */
+.fetch-hint {
+  display: grid; gap: 0.5rem; justify-items: start;
+  background: rgb(251 191 36 / .07); border: 1px solid rgb(251 191 36 / .28);
+  border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; margin-bottom: 0.9rem;
+}
+.fetch-hint-k {
+  font-size: 0.68rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--amber); font-weight: 700;
+}
+.fetch-hint-code {
+  background: #060a11; border: 1px solid rgb(251 191 36 / .3); border-left: 3px solid var(--amber);
+  border-radius: 6px; padding: 0.55rem 0.7rem; margin: 0;
+  font-size: 0.82rem; overflow-x: auto; max-width: 100%;
+}
+.fetch-hint-code code { background: none; color: #fde68a; padding: 0; white-space: pre; }
+.copy-hint { margin-top: 0.1rem; }
+
+/* Champ de saisie du mot de passe : il doit être immédiatement visible et
+   étiqueté. La question « où je tape ? » ne doit pas exister. */
+.submit-field { display: grid; gap: 0.3rem; flex: 1; min-width: 0; }
+.submit-field-k {
+  font-size: 0.68rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--fg-dim); font-weight: 700;
+}
+.submit-field input { font-family: var(--mono); letter-spacing: 0.03em; font-size: 0.95rem; }
+.submit-row { align-items: end; }
+.submit-row { display: grid; grid-template-columns: 1fr auto; gap: 0.6rem; }
+.submit-row input { font-family: var(--mono); letter-spacing: 0.04em; }
+.copy-flag { display: block; margin-top: 0.5rem; }
+
+.submit-msg { margin-top: 0.9rem; font-size: 0.86rem; }
+.submit-err { color: var(--rose); }
+.submit-warn { color: var(--amber); }
+
+.success {
+  background: rgb(52 211 153 / .08); border: 1px solid rgb(52 211 153 / .3);
+  border-radius: var(--radius-sm); padding: 1rem 1.1rem; animation: pop .3s ease-out;
+}
+@keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.success-head { font-weight: 700; color: var(--emerald); margin-bottom: 0.7rem; }
+.breakdown { list-style: none; margin: 0 0 0.7rem; padding: 0; display: grid; gap: 0.3rem; font-size: 0.86rem; }
+.breakdown li { display: flex; justify-content: space-between; gap: 1rem; color: var(--fg-dim); }
+.breakdown li b { font-family: var(--mono); color: var(--fg); }
+.breakdown li.bonus b { color: var(--emerald); }
+.breakdown li.malus b { color: var(--rose); }
+.success-total { font-weight: 700; font-family: var(--mono); font-size: 0.92rem; border-top: 1px solid rgb(52 211 153 / .2); padding-top: 0.6rem; }
+.success-rank { margin-top: 0.4rem; font-size: 0.85rem; color: var(--amber); font-weight: 600; }
+
+.next-box {
+  margin-top: 1.4rem; padding: 1.1rem;
+  background: rgb(34 211 238 / .06); border: 1px solid rgb(34 211 238 / .22);
+  border-radius: var(--radius); display: grid; gap: 0.6rem; justify-items: start;
+}
+.next-box p { margin: 0; font-size: 0.9rem; color: var(--fg-dim); }
+
+.success { margin-top: 1.1rem; }
+.solution {
+  margin-top: 1.2rem; padding: 1.1rem;
+  background: rgb(167 139 250 / .06); border: 1px solid rgb(167 139 250 / .22);
+  border-radius: var(--radius-sm);
+}
+.solution h3 { font-size: 0.9rem; margin-bottom: 0.5rem; color: #c4b5fd; }
+.solution pre { background: #060a11; border: 1px solid var(--line); border-left: 3px solid var(--violet); border-radius: var(--radius-sm); padding: 0.8rem; overflow-x: auto; font-size: 0.84rem; }
+
+/* ── dialogue d'aide */
+
+.dlg {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--fg); padding: 0;
+  width: min(820px, 92vw); max-height: 82vh;
+}
+.dlg::backdrop { background: rgb(0 0 0 / .68); backdrop-filter: blur(3px); }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.3rem; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); }
+.dlg-head h2 { font-size: 1rem; }
+.dlg-body { padding: 1.1rem 1.3rem 1.4rem; overflow-y: auto; max-height: calc(82vh - 60px); }
+.dlg-note { font-size: 0.84rem; color: var(--fg-dim); margin: 0 0 1rem; }
+.cmd-action { color: var(--fg-dim); width: 32%; }
+.cmd-code { display: flex; align-items: center; gap: 0.6rem; }
+.cmd-code code { background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 0.15rem 0.45rem; font-size: 0.8rem; color: #a5f3fc; overflow-x: auto; white-space: nowrap; }
+
+/* ── toast */
+
+.toast {
+  position: fixed; left: 50%; bottom: 1.6rem; transform: translateX(-50%);
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--fg);
+  padding: 0.65rem 1.1rem; border-radius: 999px; font-size: 0.88rem; font-weight: 600;
+  box-shadow: 0 20px 45px -20px #000; z-index: 100; max-width: min(92vw, 640px);
+  animation: pop .25s ease-out;
+}
+.toast-ok { border-color: rgb(52 211 153 / .5); color: var(--emerald); }
+.toast-err { border-color: rgb(251 113 133 / .5); color: var(--rose); }
+.toast-warn { border-color: rgb(251 191 36 / .5); color: var(--amber); }
+
+/* ═══════════════════════════════════════════════════════════ responsive */
+
+@media (max-width: 900px) {
+  .play-body { grid-template-columns: 1fr; }
+  .side-col { position: static; max-height: none; overflow: visible; }
+  .reg-row { grid-template-columns: 1fr; }
+  .c-rank { width: 46px; }
+  .qbadges { max-width: 190px; }
+  /* Les ratios se resserrent : la colonne ne doit pas manger la table. */
+  .ratio-cell { min-width: 66px; }
+}
+
+@media (max-width: 560px) {
+  .wrap { width: min(100%, 100% - 1.6rem); }
+  .quest-panel { padding: 1.1rem; }
+  .submit-row { grid-template-columns: 1fr; }
+  .head-row { gap: 0.8rem; }
+  .play-stats { gap: 0.8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+/* impression : la liste des missions reste lisible sur papier */
+@media print {
+  body { background: #fff; color: #000; }
+  .play-head, .quest-map, .submit-box, .aid, .toast, .btn { display: none !important; }
+  .quest-panel { border: 0; box-shadow: none; }
+}
+/* ═══════════════════════════════════════════════════════════════ ADMIN */
+
+.admin-body { background: var(--bg); }
+
+/* ── l'écran du mot de passe */
+.admin-gate {
+  min-height: 100vh;
+  display: grid; place-items: center;
+  padding: 2rem 1rem;
+}
+.admin-card {
+  width: min(100%, 30rem);
+  display: grid; gap: 0.7rem;
+  padding: 2rem 1.8rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.admin-gate-brand {
+  font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--fg-faint);
+}
+.admin-card h1 { font-size: 1.5rem; margin: 0; }
+.admin-gate-sub { font-size: 0.88rem; color: var(--fg-dim); margin: 0 0 0.4rem; }
+.admin-gate-sub code { font-family: var(--mono); font-size: 0.85em; color: var(--cyan); }
+.admin-card label { font-size: 0.8rem; color: var(--fg-dim); }
+.admin-card input {
+  font: inherit; padding: 0.6rem 0.75rem;
+  background: var(--bg-2); color: var(--fg);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.admin-card input:focus { outline: none; border-color: var(--cyan); }
+.admin-gate-note {
+  font-size: 0.78rem; color: var(--fg-faint); margin: 0.3rem 0 0;
+  padding-top: 0.8rem; border-top: 1px solid var(--line-soft);
+}
+.admin-gate-back { font-size: 0.82rem; color: var(--fg-dim); text-decoration: none; }
+.admin-gate-back:hover { color: var(--fg); }
+.admin-msg { font-size: 0.85rem; margin: 0; min-height: 1.2em; }
+.admin-msg-err { color: var(--rose); }
+.admin-msg-warn { color: var(--amber); }
+
+/* ── l'écran */
+.admin-head {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+  padding: 0.9rem 0;
+}
+.admin-brand { font-size: 1.1rem; }
+.admin-sub { font-size: 0.8rem; color: var(--fg-dim); font-family: var(--mono); }
+.admin-body-main { display: grid; gap: 1.2rem; padding: 1.5rem 0 3rem; }
+
+.admin-stats {
+  display: grid; gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.admin-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.admin-panel-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.admin-panel-head h2 { font-size: 0.95rem; margin: 0; display: flex; gap: 0.5rem; align-items: center; }
+.admin-panel-sub { font-size: 0.76rem; color: var(--fg-dim); }
+.admin-panel .table-scroll { max-height: 30rem; overflow: auto; }
+.admin-panel details { padding: 0.9rem 1.1rem; }
+.admin-panel summary { cursor: pointer; font-size: 0.88rem; color: var(--fg-dim); }
+.admin-panel pre {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem; overflow-x: auto; margin: 0.8rem 0 0;
+  font-family: var(--mono); font-size: 0.76rem; line-height: 1.5;
+}
+.admin-note { font-size: 0.78rem; color: var(--fg-faint); margin: 0.7rem 0 0; }
+.admin-note b { color: var(--amber); }
+
+.admin-search { padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--line-soft); }
+.admin-search input {
+  width: 100%; font: inherit; font-size: 0.86rem;
+  padding: 0.45rem 0.7rem;
+  background: var(--bg-2); color: var(--fg);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.admin-search input:focus { outline: none; border-color: var(--cyan); }
+
+.admin-cols {
+  display: grid; gap: 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.admin-stuck { list-style: none; margin: 0; padding: 0.5rem 1.1rem 1rem; display: grid; gap: 0.4rem; }
+.admin-stuck li { display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.6rem; align-items: baseline; }
+.stuck-n { font-family: var(--mono); color: var(--amber); font-weight: 700; }
+.stuck-t { font-size: 0.86rem; }
+.stuck-c { font-size: 0.76rem; color: var(--fg-dim); font-family: var(--mono); }
+
+.admin-log { list-style: none; margin: 0; padding: 0.5rem 1.1rem 1rem; display: grid; gap: 0.25rem; }
+.admin-log li {
+  display: grid; grid-template-columns: 4.5rem 7rem 1fr; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.74rem;
+}
+.log-at { color: var(--fg-faint); }
+.log-k { color: var(--cyan); }
+.log-d { color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; }
+.admin-log .log-warn .log-k { color: var(--rose); }
+.admin-log .log-warn .log-d { color: var(--rose); }
+
+.btn-danger {
+  background: rgb(251 113 133 / .12);
+  border: 1px solid rgb(251 113 133 / .35);
+  color: var(--rose);
+}
+.btn-danger:hover { background: rgb(251 113 133 / .2); }
+
+.admin-foot {
+  display: flex; flex-wrap: wrap; gap: 0.6rem;
+  justify-content: center;
+  font-size: 0.78rem; color: var(--fg-faint);
+  padding-top: 0.5rem;
+}
+
+/* ── confirmation : ni `window.confirm` ni un clic sur « ok »
+   La phrase dit ce qui va se passer et sur qui. */
+.confirm-box {
+  position: fixed; inset: 0; z-index: 10000;
+  display: grid; place-content: center; gap: 0.8rem;
+  padding: 1.5rem;
+  background: rgb(7 11 18 / .78);
+  backdrop-filter: blur(3px);
+}
+.confirm-box p {
+  max-width: 30rem; margin: 0;
+  padding: 1.1rem 1.3rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rose);
+  border-radius: var(--radius);
+  font-size: 0.92rem; line-height: 1.5;
+}
+.confirm-box .btn { justify-self: center; }

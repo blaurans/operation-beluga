@@ -1,0 +1,86 @@
+# Portail « Opération Beluga ».
+#
+#   docker compose up -d --build
+#
+# Le portail n'est PAS publié sur la machine : il n'est joignable que par
+# Caddy, qui partage le réseau Docker `headscale_default`. Voir README § Mise
+# en ligne. Aucune ligne `ports:` ici — c'est volontaire. Le portail est
+# un service interne, pas un serveur web de face.
+#
+# Ce compose est presque le même que celui d'atelierdocker, avec deux
+# différences qui comptent : les noms (image, conteneur, volume) et le préfixe
+# des deux variables d'environnement. Les deux portails tournent en parallèle
+# sur la même machine, sur deux volumes distincts et derrière deux noms de
+# domaine distincts. Les confondre viderait la base du mauvais jeu.
+
+services:
+  beluga:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: operation-beluga:0.1
+    container_name: operation-beluga
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "8000"
+      # Base sur un volume nommé : les validations survivent à un `down` / `up`.
+      DB_FILE: /data/beluga.sqlite
+      # Sel de dérivation des mots de passe. Distinct de celui d'atelierdocker,
+      # pour qu'un joueur inscrit sur l'un ne puisse pas dériver le mot de passe
+      # d'une quête de l'autre. Sans lui, deux joueurs distincts déduiraient le
+      # même secret à partir de quêtes identiques.
+      ARENA_SALT: "${BELUGA_SALT:-operation-beluga-v1}"
+      # Clé d'administration pour /api/stats et /api/admin/*. Ces endpoints
+      # suppriment des données (reset, delete) : sur une URL publique, une clé
+      # vide les laisse ouverts à quiconque trouve l'adresse. Le compose
+      # refuse de démarrer sans clé, c'est le `:?` de la ligne ci-dessous.
+      ADMIN_KEY: "${BELUGA_ADMIN_KEY:?BELUGA_ADMIN_KEY obligatoire — voir .env.example}"
+      # 1 = un flag correct reste « en attente » jusqu'à validation manuelle
+      # de l'enseignant. Voir README § Limites.
+      REQUIRE_ATTESTATION: "${ARENA_ATTESTATION:-0}"
+      # Guidage d'affichage. 0 (défaut) = tout est accessible d'emblée, on
+      # peut sauter une mission et y revenir. 1 = le plan ne montre que la
+      # mission suivante. Ce n'est pas une contrainte serveur : /api/submit
+      # n'accepte que le flag dans les deux cas (voir ARENA_ATTESTATION pour
+      # une vraie contrainte).
+      LINEAR_PROGRESSION: "${ARENA_LINEAR:-0}"
+      # Plafonds de débit par IP et par route (fenêtre d'une minute).
+      # `off` désactive tout plafond.
+      RATE_LIMIT: "${ARENA_RATE_LIMIT:-on}"
+      # 1 derrière le reverse proxy Caddy : c'est lui qui parle au portail, et
+      # c'est donc le seul cas où X-Forwarded-For et X-Forwarded-Proto sont
+      # dignes de confiance. Sans ce réglage, les commandes de récupération
+      # de mot de passe sont régénérées en `http://` alors que l'élève les
+      # tape depuis une page servie en `https://`.
+      TRUST_PROXY: "${BELUGA_TRUST_PROXY:-1}"
+    volumes:
+      - beluga-data:/data
+    networks:
+      - caddy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  beluga-data:
+    name: operation-beluga-data
+
+# Réseau du reverse proxy déjà en place sur la machine. `external: true`
+# signale à Compose de ne pas tenter de le créer : il existe déjà, caddy y
+# est. C'est ce qui permet à Caddy de joindre le portail par son nom
+# (operation-beluga:8000) sans publier le moindre port sur l'hôte.
+networks:
+  caddy:
+    external: true
+    name: headscale_default

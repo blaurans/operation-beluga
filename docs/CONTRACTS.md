@@ -1,0 +1,671 @@
+# Contrats partagés — Opération Beluga
+
+Ce document est la source de vérité pour le schéma d'un atelier, le contrat d'API
+et la mesure de la maîtrise. Tout le code doit s'y conformer.
+
+Trois choses ont changé depuis la V1 (Docker Ops Race, gelée sur `v1.0.0`) :
+
+1. **Il n'y a plus de points ni de classement.** Les sections 1.4 et 3, qui
+   décrivaient le barème, ne sont plus des règles mais un historique.
+2. **Les indices sont payants**, et leur contenu ne sort plus par `/api/quests`.
+3. **La compréhension est vérifiée** : questions à choix fermé, et réflexe à
+   restituer.
+
+Et une chose a changé au changement de nom (`Atelier Docker` → `Opération
+Beluga`) :
+
+4. **`meta.story` existe.** C'est l'introduction narrative de l'atelier, premier
+   élément de données du fil rouge. Voir § 1.0. Le **schéma des quêtes** n'a pas
+   bougé ; c'est le `meta` du module qui a grandi.
+
+---
+
+## 1. Schéma d'un atelier
+
+Les quêtes vivent dans `content/quests/m<N>.js`. Chaque fichier exporte **un objet**
+`{ meta, quests: [...] }` en **ESM**.
+
+```js
+export default {
+  meta: {
+    slug: 'm1-evaluer-le-patient',
+    module: 1,
+    title: 'Évaluer le patient',
+    tagline: 'Savoir sur quoi on travaille, installer l\'outillage',
+    icon: '🩺',
+    story: `# Beluga est en perte de vitesse
+
+Onze mille mètres. Le vol Beluga vient de traverser une zone de turbulence…
+
+Cet atelier n'est pas une leçon, c'est une **évaluation**.`,
+  },
+  quests: [ /* ... */ ],
+};
+```
+
+### 1.0 `meta.story` — le fil rouge
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `slug` | string | kebab-case ASCII, unique. Ex. `m1-evaluer-le-patient` |
+| `module` | number | entier ≥ 1, unique |
+| `title` | string | le nom de l'atelier, ce qu'il fait |
+| `tagline` | string | une ligne, ce qu'on y apprend |
+| `icon` | string | un emoji |
+| `story` | string | **Obligatoire.** ≥ 200 caractères, Markdown, **un seul** `# `. Voir ci-dessous |
+
+`story` est l'introduction narrative affichée **au-dessus de la première quête du
+module**, et seulement celle-là.
+
+**Elle est obligatoire, et le serveur refuse de démarrer sans.** La raison est la
+même que pour un flag : une introduction manquante ne se voit pas. On la découvre
+en lisant le jeu depuis le début, comme un élève — et l'absence d'intro est
+précisément ce qui fait qu'un jeu technique se lit comme une liste d'exercices.
+
+**Le même jeu de règles Markdown que `brief`** (§ 1.1), et pour la même raison :
+les deux sont rendus par `public/md.js`, et un jeu de règles différent produirait
+un texte qui s'affiche chez l'un et disparaît chez l'autre — en silence, puisque
+le mini-renderer ignore ce qu'il ne sait pas rendre. Les deux passent par
+`verifierProse()` dans `src/questpack.js`. `story` n'a pas besoin de bloc de code :
+un bloc y serait du texte à lire, pas une commande à taper.
+
+**`story` ne demande pas de réponse écrite.** Le validateur le refuse, comme pour
+`brief` : il n'y a pas de champ où saisir une réponse.
+
+**Le fil rouge n'emporte jamais un `check`.** C'est une règle de rédaction, pas de
+forme, et le validateur ne peut pas la vérifier. Un élève qui répond « parce
+qu'il faut garder Beluga en vie » n'a rien appris du Docker, et le jeu ne doit
+pas lui faire croire le contraire. Les QCM portent sur le mécanisme, toujours.
+
+**Elle sort par `GET /api/quests`**, avec la même substitution que `brief` et
+`fetchHint` : les trois substitutions de `jouable()` s'appliquent (§ 2.5).
+
+### Champs d'une quête
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `id` | string | kebab-case unique dans tout le jeu, ex. `m1-01-diagnostiquer` |
+| `order` | number | entier ≥ 1, unique **par module**, trié croissant |
+| `title` | string | 3 à 60 caractères |
+| `points` | number | entier 25 → 600. Voir § 1.4 — vestige, plus lu |
+| `flag` | string | `FLAG{...}` en MAJUSCULES, `A-Z0-9_` à l'intérieur. **Unique dans tout le jeu** |
+| `estMinutes` | number | entier 2 → 25, temps *indicatif* pedagogique |
+| `brief` | string | Markdown. La mission à réaliser. Voir § 1.1 |
+| `hints` | string[] | 0 à 3 indices, du plus flou au plus direct. Voir § 1.5 |
+| `charge` | object | ce que coûte chaque indice. Voir § 1.5. Optionnel |
+| `check` | object[] | 0 à 3 questions de compréhension. Voir § 1.6 |
+| `recall` | object | un réflexe à restituer. Voir § 1.7 |
+| `solution` | string | Bloc ```` ```bash ```` avec la correction complète |
+| `teaches` | string[] | 1 à 5 mots-clés de vocabulaire Docker vus dans la quête |
+| `checkpoint` | string | 1 phrase : « Comment savoir que j'ai réussi ? » |
+| `fetchHint` | string | **Obligatoire.** La commande qui va chercher le mot de passe, avec l'URL du portail. Voir § 1.3 |
+
+### 1.1 Anatomie de `brief` et de `story`
+
+Le `brief` est rendu côté client par un mini-renderer Markdown, et `story` par le
+même. **Sous-ensemble supporté, rien d'autre** :
+
+- `# ` → `h3` (titre de la quête)
+- paragraphes
+- `- ` → listes à puces
+- `1. ` → listes ordonnées
+- ```bash … ``` → bloc de code (`brief` seulement)
+- `**gras**`, `*italique*`, `` `code` ``
+- `[texte](url)` — uniquement des URL http(s)
+
+⚠️ Interdit : les tableaux, les images, le HTML, les listes imbriquées, les
+titres `#` multiples. Le validateur (`npm test`) rejette les breaches.
+
+**Les garde-fou s'appliquent à la prose, pas aux blocs de code.** Un énoncé qui
+montre une sortie de commande contient naturellement des lignes commençant par
+`#` (commentaires shell), des `|` (pipes) et des chevrons (redirections) — et
+aucune de ces lignes n'est du Markdown. Sans cette distinction, « un seul titre »
+rejetait tout énoncé montrant une sortie, et « pas de tableau » aurait rejeté le
+premier `docker images | head` en début de ligne.
+
+### 1.2 Mot de passe : à chercher, jamais recopier
+
+### 1.3 Interdiction de mentionner le mot de passe
+
+Le validateur rejette tout `brief` qui contient le flag ou qui promet qu'il est
+affiché.
+
+### 1.4 Points — vestige
+
+`points` existe encore dans le schéma et reste validé, mais **plus rien ne le lit**.
+Les invariants arithmétiques associés (multiple de 100 par module, somme
+croissante, quête phare = multiple de 100) restent appliqués, pour que les
+contenus existants se chargent sans réécriture.
+
+Ils disparaitront avec le contenu : quand le barème n'est plus utilisé, le
+contraindre n'a plus de sens et gêne la réécriture des ateliers. Les valeurs
+actuelles sont rappelées ici pour référence.
+
+| Quête phare | Module | Points |
+|---|---|---|
+| `Initial Boot` | 2 | 100 |
+| `Infiltration Interactive` | 3 | 200 |
+| `Port Master` | 4 | 300 |
+| `Image Alchemist` | 5 | 400 |
+| `Persistence Guardian` | 5 | 500 |
+| `Compose Overlord` | 7 | 600 |
+
+### 1.5 Indices : payants, et jamais dans le payload
+
+C'est la règle la plus importante de ce document.
+
+**Le contenu des indices ne sort pas par `GET /api/quests`.** La réponse ne
+porte que `hint_count` (un nombre). Le texte sort par :
+
+```
+POST /api/quests/:id/hint
+```
+
+qui écrit une ligne dans `hint_uses` avant de répondre. Les indices vivent donc
+dans `pack.hintsByQuest`, **hors** des objets de quête — c'est ce qui rend la
+fuite impossible par oubli : il faudrait un accès explicite à cette table.
+
+Un élève ouvre l'onglet réseau, il voit `hint_count: 3` et trois boutons. Il ne
+peut pas lire les indices sans les prendre, et les prendre les engage.
+
+**`charge`** décrit le prix :
+
+```js
+charge: {
+  perHint: 1,          // entier 0 à 10, informatif
+  autonomy: [1, 1, 0], // coût du 1er, du 2e, du 3e indice
+}
+```
+
+Invariants vérifiés par `src/questpack.js` :
+
+- `autonomy` a exactement autant d'entrées que `hints`.
+- **Le dernier indice est toujours gratuit.** Un élève bloqué n'a jamais le
+  droit de rester coincé : l'enseignant a dit qu'il serait disponible en salle,
+  et on ne transforme pas la disponibilité en variable d'ajustement.
+
+Le coût ne s'exprime pas en points — il n'y en a plus. Il s'exprime en
+**autonomie** : la part de quêtes validées sans indice. Une quête prise avec des
+indices payants compte pour la progression, pas pour l'autonomie.
+
+#### Les deux modes ne diffèrent que par le prix
+
+En mode **Calme**, tout le prix est annulé : `autonomy_lost: 0`, et la
+ligne en base est écrite avec `charged = 0`. Un élève peut donc demander
+autant d'indices qu'il veut — et son autonomie est intacte.
+
+C'est pourquoi **deux compteurs** existent, et non un seul :
+
+| champ | ce que c'est | à quoi il sert |
+|---|---|---|
+| `hints_used` | indices **demandés** | l'enseignant voit où ça coince ; l'élève voit ce qu'il a demandé |
+| `hints_charged` | indices **payés** | c'est le seul qui décide de l'autonomie |
+
+La règle à retenir : **l'autonomie se mesure sur `hints_charged`**. Compter la
+consommation aurait annulé le prix sans annuler la conséquence — l'élève aurait
+vu sa maîtrise chuter sans avoir rien payé, et le message lui aurait annoncé
+« sans indice » juste après qu'il en avait demandé un.
+
+### 1.6 `check` — compréhension vérifiée
+
+```js
+check: [{
+  id: 'm1-01-liste-vide',        // kebab-case, unique dans la quête
+  kind: 'mcq',                    // 'mcq' | 'boolean'
+  prompt: 'Sur une machine neuve, laquelle de ces listes est vide ?',
+  choices: ['docker images', 'docker ps', 'les deux'],
+  answer: 1,                      // index dans `choices`, ou booléen si kind='boolean'
+  explanation: 'Une image est un modèle figé ; sans lancement, aucun conteneur.',
+  required: true,
+}]
+```
+
+Invariants :
+
+- 0 à 3 questions par quête.
+- `explanation` est **obligatoire** et fait au moins 15 caractères. Une question
+  sans justification n'enseigne rien.
+- `explanation` ne doit pas figurer mot pour mot dans le `brief` : l'élève la
+  lirait avant d'avoir cherché.
+- La réponse ne **bloque pas** la validation. `required: true` signifie
+  simplement que cette question compte pour le ratio de compréhension.
+
+C'est un choix : punir un élève qui a cherché le punit de chercher moins. L'écart
+est visible par l'enseignant (`attempts` en base), pas par un zéro.
+
+### 1.7 `recall` — le réflexe, pas l'identité
+
+```js
+recall: {
+  id: 'm1-01-ps',
+  prompt: 'Quelle commande liste les conteneurs en marche ?',
+  accept: ['docker ps', 'ps'],
+  hint: 'Deux lettres, la commande de lecture des processus en marche.',
+}
+```
+
+On compare des **jetons**, pas des chaînes : la réponse est juste si elle
+*contient* l'un des `accept`. « je pense que c'est docker ps » compte juste.
+
+C'est le choix inverse de « répondre par la commande ». On ne demande pas de
+retranscrire `docker run -p 8080:80 nginx` — l'ordre des flags n'est pas le
+réflexe, l'option est. Un élève qui écrit la commande complète et se trompe
+d'ordre passe, et c'est voulu.
+
+Invariants :
+
+- `accept` fait 1 à 4 entrées.
+- `hint` est obligatoire : l'élève doit pouvoir corriger sa réponse. Il ne
+  contient **jamais** le mot accepté (vérifié par le validateur).
+- `hint` n'est envoyé qu'après une réponse fausse.
+
+---
+
+## 2. Contrat d'API
+
+Base : `https://atelierdocker.laurans.org`. JSON en entrée et sortie, sauf
+indication contraire.
+
+### 2.1 `POST /api/register`
+
+```jsonc
+{ "team": "Alice", "mode": "normal" }
+```
+
+`mode` vaut `competitive` ou `normal`. Les valeurs sont un contrat d'API — les
+élèves s'inscrivent en ligne de commande — mais **l'écran affiche « Turbulence »
+et « Calme »** (`MODE_LABELS` dans `src/config.js`).
+
+Ces libellés sont **dupliqués** dans `public/index.html` (les deux cartes de
+choix), `public/admin.html` (le menu d'inscription) et `public/admin.js` (le
+tableau de suivi et la confirmation de changement). Le doublon est toléré parce
+qu'un test le vérifie dans les deux sens — `test/contract.test.js`, « les
+libellés de mode sont les mêmes partout ». **Ne pas le « nettoyer » sans ajouter
+le test** : c'est déjà arrivé, et la divergence n'a été vue par personne.
+
+Réponse 201 :
+
+```jsonc
+{
+  "status": "created",             // created | exists
+  "team": "Alice",
+  "mode": "normal",
+  "token": "dq_…",                 // 40 hex, jamais regeneré
+  "last_submission": "-",
+  "registered_at": "14:02:11"
+}
+```
+
+`message` est un texte de bienvenue, jamais un contrat : l'interface ne s'y
+fie pas et aucun test ne l'affirme. Il ne dit plus « l'Arena » — le produit
+s'appelle Atelier Docker depuis la V2, et un élève doit reconnaître l'écran
+qu'il a devant lui.
+
+**Statuts** : `201` à la création, `200` quand le pseudo existe déjà et que le
+secret correspond, `409` quand le pseudo est protégé par un secret et que le
+fourni ne correspond pas, `400` pour un pseudo ou un mode invalide.
+
+### 2.2 `POST /api/submit`
+
+```jsonc
+{ "team": "Alice", "flag": "FLAG{…}", "secret": "…" }
+```
+
+`team` + `secret` **ou** en-tête `X-Arena-Token` (ou `?token=` en query
+string). Réponse :
+
+```jsonc
+{
+  "status": "success",              // success | already_submitted | pending
+  "mode": "competitive",
+  "quest_validated": 15,            // numéro de la quête dans le parcours
+  "quest_title": "Port Master",
+  "mastery": {                      // la mesure, pas un score
+    "done": 15, "total_quests": 27,
+    "autonomous": 12, "understood": 13,
+    "hints_used": 9,                // indices DEMANDÉS
+    "hints_charged": 6,             // indices PAYÉS — c'est eux qui coûtent l'autonomie
+    "progress_ratio": 0.58, "autonomy_ratio": 0.8,
+    "comprehension_ratio": 0.87,
+    "level": { "key": "autonome", "name": "Autonome" }
+  },
+  "quest_result": {                 // ce que CETTE quête a rapporté
+    "hints_used": 1,                // demandé
+    "hints_charged": 1,             // payé — en mode Calme : 0
+    "autonomous": false,            // hikes_charged === 0
+    "check_ok": true
+  },
+  "completed_count": "15/27",
+  "finished": false,
+  "unlocked_next": "m5-01-…",
+  "time_display": "1 min 12 s",
+  "message": "Quête 15 validée, avec 1 indice. 15/27 quêtes accomplies."
+}
+```
+
+**Aucun champ de point.** Ni `points_earned`, ni `score_total`, ni `breakdown`,
+ni `rank`. Un client qui les attend ne les recevra pas — c'est volontaire, un
+`points_earned: 0` laisserait croire que le score existe encore.
+
+`status: "pending"` signifie que `REQUIRE_ATTESTATION=1` : le mot de passe est
+correct mais la quête n'est pas acquise tant que l'enseignant n'a pas appelé
+`POST /api/admin/attest/:team/:questId`.
+
+### 2.3 `GET /api/overview`
+
+Une liste, tous modes confondus, **triée alphabétiquement**. Aucun classement :
+le tri alphabétique est le seul tri, et il ne classe personne.
+
+```jsonc
+{
+  "players": [{
+    "team": "Alice",
+    "mode": "normal",
+    "done": 15,
+    "progress_ratio": 0.58,
+    "autonomy_ratio": 0.8,          // part de quêtes validées sans indice
+    "comprehension_ratio": 0.87,    // part validée avec les QCM réussis
+    "hints_used": 9,                // demandés, tous modes confondus
+    "hints_charged": 6,             // payés — nuls pour un joueur en Calme
+    "quest_numbers": [1, 2, 3, 4],  // numéros des missions validées (les pastilles)
+    "level": "autonome", "level_name": "Aux commandes",
+    "modules": [ { "module": 1, "total": 4, "done": 4,
+                   "autonomous": 3, "understood": 4,
+                   "ratio": 1, "autonomy_ratio": 0.75 } ],
+    "attempts": 18,
+    "progress": "15/27",
+    "last_submission": "14:02:11",
+    "finished": false,
+    "registered_at": "13:58:00",
+    "last_ip": "192.168.38.42"
+  }],
+  "meta": {
+    "total_quests": 27,
+    "modules": [ { "module": 1, "title": "Évaluer le patient", "count": 4 } ],
+    "cohort": { "players": 12,           // inscrits
+                "started": 11,            // ont validé au moins une quête
+                "started_ratio": 0.92,
+                "average_autonomy": 0.62, "average_hints": 1.4,
+                "hardest": [ { "module": 3, "hints": 41 } ] },
+    "attestation_required": false,
+    "server_time": "2026-…"
+  }
+}
+```
+
+`meta.cohort.hardest` liste les ateliers par **indices consommés**, pas par
+échec de validation. Un atelier court et maîtrisé génère moins d'indices qu'un
+atelier long et difficile, sans que ce soit un signal d'alerte.
+
+`last_ip` est le poste du **dernier appel** du joueur. Elle n'est lue depuis
+`X-Forwarded-For` que si `TRUST_PROXY=1` : sans proxy réel, se fier à cet
+en-tête permettrait à un élève de maquiller son adresse.
+
+### 2.4 Toutes les routes
+
+| Route | Rôle |
+|---|---|
+| `GET /api/quests` | le programme complet, sans les indices ni les réponses |
+| `GET /api/me` | la maîtrise du joueur et son historique |
+| `POST /api/register` | inscription, jeton stable |
+| `POST /api/submit` | soumission d'un mot de passe |
+| `GET /api/overview` | l'état de la classe — **fermé, § 2.7**, appelé seulement par `/admin` |
+| `GET /api/live` | flux SSE de cet état — **fermé, § 2.7** |
+| `GET /api/stats` | indicateurs de séance — **fermé, § 2.7** |
+| `GET /api/commands` | mémento de commandes Docker |
+| `GET /api/secret/:questId` | le mot de passe, en JSON |
+| `GET /api/secret/:questId/raw` | le mot de passe, en texte brut (pour `wget`) |
+| `POST /api/quests/:id/hint` | rend **un** indice, l'enregistre, renvoie ce qu'il a coûté |
+| `POST /api/quests/:id/check` | vérifie une réponse de compréhension |
+| `POST /api/quests/:id/recall` | vérifie le réflexe, renvoie l'aide si faux |
+| `GET /api/quests/:id/attempts` | ce que l'élève a déjà répondu sur cette quête |
+| `POST /api/admin/seed` | (ré)initialise le programme |
+| `POST /api/admin/reset/:team` | remet un joueur à zéro |
+| `POST /api/admin/delete/:team` | supprime une inscription |
+| `POST /api/admin/mode/:team` | bascule un joueur de mode — efface son parcours |
+| `GET /api/admin/pending` | les soumissions en attente d'attestation |
+| `POST /api/admin/attest/:team/:questId` | l'enseignant valide une soumission |
+
+### 2.7 Ce qui est fermé
+
+Toutes les routes listées ci-dessus **ne répondent à personne** sans jeton
+d'administration valide :
+
+| route | ce qu'elle ouvrirait sans jeton |
+|---|---|
+| `GET /api/overview` | tous les élèves, leur progression, leur adresse IP |
+| `GET /api/live` | la même chose, en continu |
+| `GET /api/stats` | les indicateurs de séance |
+| `POST /api/admin/*` | la remise à zéro et la suppression d'inscriptions |
+
+Ce sont des routes d'**enseignant**. Un élève n'en a jamais besoin : son
+parcours passe par `/api/register`, `/api/quests`, `/api/submit` et les trois
+routes de maîtrise.
+
+Le jeton s'obtient par `POST /api/admin/session` avec le mot de passe, et
+revient dans un cookie :
+
+```
+Set-Cookie: dq_admin=<expiration>.<signature>; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800
+```
+
+- **`HttpOnly`** — aucune page ne peut le lire. Une faille XSS sur le portail ne
+  donne pas l'administration.
+- **`SameSite=Strict`** — le cookie n'est pas envoyé sur une requête initiée par
+  un autre site. C'est ce qui empêche qu'un lien glissé dans une discussion
+  supprime une inscription avec la session ouverte.
+- **`Secure`** ajouté dès que la requête arrive en HTTPS.
+
+L'en-tête `X-Arena-Admin` accepte **aussi le mot de passe en clair**, parce que
+`curl` ne gère pas les cookies. Ce canal est réservé aux scripts : une page ne
+peut pas s'en servir.
+
+Et s'il n'y a pas de mot de passe, le serveur **refuse de démarrer**. Il n'y a
+plus de mode « lab ouvert » : sur une URL publique, une clé vide donnait à
+quiconque trouve l'adresse la liste de la classe et un bouton pour supprimer des
+inscriptions.
+
+La clé se pose dans le `.env` du serveur, sous le nom `BELUGA_ADMIN_KEY`. Ce
+nom est propre à ce portail : les deux jeux tournent en parallèle sur la même
+machine, et une clé partagée donnerait à l'enseignant de l'un les inscriptions
+de l'autre.
+
+La page `GET /admin` est servie **sans** jeton : c'est elle qui porte le champ
+du mot de passe. Ce qu'elle affiche ensuite, oui, est fermé.
+
+### 2.8 Qui appelle quoi
+
+Deux pages, deux publics :
+
+| page | publique ? | ce qu'elle appelle |
+|---|---|---|
+| `/` et `/#/` | oui | `/api/register`, `/api/quests`, `/api/me`, `/api/submit`, `/api/secret`, `/api/commands`, les trois routes de maîtrise |
+| `/admin` | non, jeton requis | `/api/admin/session`, `/api/overview`, `/api/stats`, `/api/live`, `/api/admin/*` |
+
+Il n'y a **aucun** appel d'administration dans le jeu des élèves. Le tableau de
+classe ne vit que dans `/admin`, ce qui veut dire qu'une fuite de jeton de
+joueur n'expose rien : `/api/overview` répond 401 à un `X-Arena-Token`, qui
+n'est pas un jeton d'administration.
+
+`/#/` reste accepté sans rôle : c'est l'adresse que l'enseignant distribue
+depuis le début, et la faire marcher coûte moins cher que de demander à vingt
+élèves de la changer. Un hash inconnu ne mène nulle part de spécial.
+
+Les trois routes de maîtrise répondent à la règle commune : **ce qui est montré
+au client a été demandé au serveur.**
+
+`POST /api/quests/:id/hint` répond :
+
+```jsonc
+{
+  "status": "ok",                  // ok | already_taken | exhausted
+  "index": 0,                      // 0-based
+  "hint": "…",                     // null si exhausted
+  "autonomy_lost": 1,              // 0 si déjà pris
+  "remaining": 1,                  // combien restent
+  "free_next": false               // le prochain sera-t-il gratuit ?
+}
+```
+
+`already_taken` est renvoyé quand la ligne existe déjà : rejouer la même demande
+ne coûte **rien** une seconde fois. C'est l'`UNIQUE(player_id, quest_id,
+hint_index)` qui le garantit, pas le client.
+
+### 2.5 Accès aux missions
+
+`GET /api/quests` renvoie le programme. Pour une quête donnée :
+
+| Champ | Sort ? |
+|---|---|
+| `hint_count` | oui — le **nombre** d'indices |
+| `charge` | oui — le prix, pour l'afficher avant le clic |
+| `check` | **partiellement** — `id`, `kind`, `prompt`, `choices`, `required` |
+| `check[].answer` | **jamais** |
+| `check[].explanation` | **jamais** — seulement après une bonne réponse |
+| `recall` | **partiellement** — `id`, `prompt` |
+| `recall[].accept` | **jamais** |
+| `recall[].hint` | **jamais** — seulement après un échec |
+| `hints` | **jamais** (§ 1.5) |
+| `solution` | **jamais** avant validation |
+
+Les questions sont publiques parce que l'élève doit pouvoir les lire pour y
+répondre. Leur réponse ne l'est pas : la vérifier ne mesurerait rien si elle
+était dans l'onglet réseau.
+
+La correction (`solution`) n'est renvoyée que pour les missions validées :
+`"solution": done.has(q.id) ? q.solution : null`. Un élève qui la lisait avant
+n'aurait rien à faire.
+
+`fetch_hint` est la commande de récupération du mot de passe, avec `SERVER_IP`
+et le littéral `dq_xxxxxxxxxxxxxxxx` déjà remplacés par l'origine et le jeton du
+joueur. L'origine est complète, protocole compris (§ README § Mise en ligne).
+
+### 2.5 bis Ce que renvoie le programme, par module
+
+Chaque entrée de `modules[]` porte `module`, `title`, `tagline`, `icon` et
+**`story`** — l'introduction du § 1.0, **avec la même substitution** que `brief`
+et `fetch_hint`. Les trois substitutions de `jouable()` s'appliquent aux trois.
+
+Chaque entrée de `modules[].quests[]` porte `order` en plus de `number` :
+
+| champ | ce que c'est | pourquoi il sort |
+|---|---|---|
+| `number` | le rang dans **tout le jeu** (1 à 27) | l'affichage : « Quête 15 validée » |
+| `order` | le rang **dans le module** (1 à 4) | le client doit savoir s'il ouvre la **première** quête d'un atelier, donc s'il affiche l'intro |
+
+`number` ne peut pas servir à ça : la quête 5 peut être la première de l'atelier
+2. `order` était déjà dans le contenu ; il est simplement transmis.
+
+### 2.6 Plafonds de débit
+
+Par IP, fenêtre d'une minute :
+
+| Route | Limite |
+|---|---|
+| `/api/register` | 12 |
+| `/api/submit` | 40 |
+| `/api/quests` | 120 |
+| `/api/live` | 300 |
+| reste de `/api` | 600 |
+
+⚠️ **En salle**, si toutes les VM des élèves sortent par la même adresse (NAT de
+l'établissement), c'est la promotion entière qui partage le compteur. Le plafond
+de 40/min sur `/api/submit` peut alors renvoyer des 429 à tout le monde en même
+temps. Voir README § Salle.
+
+---
+
+## 3. La maîtrise
+
+Ce qui remplace le score. Trois ratios, sur un seul élève, et **aucune
+comparaison entre élèves**.
+
+| Mesure | Ce qu'elle compte | Formule |
+|---|---|---|
+| progression | où j'en suis | `validées / total du jeu` |
+| autonomie | ce que j'ai su faire seul | `validées sans indice / validées` |
+| compréhension | ce que j'ai compris | `validées avec QCM réussis / validées` |
+
+Deux règles non négociables :
+
+1. **Le dénominateur de la progression est le jeu entier**, jamais le nombre de
+   quêtes faites. Un élève à 5/27 est à 19 %, pas à 100 %.
+2. **Le niveau exige deux seuils** — autonomie *et* avancement. Sans le second,
+   un élève qui réussit sa première quête sans indice (autonomie 100 %) verrait
+   « Atterrissage » s'afficher immédiatement. Paliers :
+
+| Palier | autonomie | avancement |
+|---|---|---|
+| Éveillé | 0 | 0 |
+| Moteur en marche | 10 % | 5 % |
+| Aux commandes | 50 % | 25 % |
+| Vol stable | 75 % | 50 % |
+| Atterrissage | 90 % | 80 % |
+
+Les noms racontent le vol de l'appellation **Opération Beluga** : on part d'un
+poste qu'on tient debout, on finit par tenir l'avion. Ils ne décrivent pas un
+score — aucun de ces paliers n'est comparable à celui d'un camarade.
+
+`src/mastery.js` est la seule source de ces chiffres. `time_ms` est conservé :
+le temps n'entre dans aucun ratio, mais l'enseignant en a besoin pour voir qui
+galère.
+
+---
+
+## 4. Recette dans un vrai navigateur
+
+`outils/navigateur/` pilote Chromium en CDP et joue le jeu **par les pixels**.
+C'est indispensable : cinq des neuf défauts corrigés avant la v1.0 étaient
+invisibles depuis les tests unitaires, qui exécutent `public/app.js` contre un
+DOM de substitution. Voir `outils/navigateur/LISEZ-MOI.md` pour Chromium, les
+scripts, et les pièges déjà payés (`confirm` qui bloque un onglet, navigation
+qui ne recharge pas, `captureBeyondViewport` qui ment).
+
+Ce ne sont pas des tests automatisés : ils ne sont pas dans la CI, ils ont lieu
+quand on regarde une page. Les garder dans le dépôt est délibéré — ce sont eux
+qui ont trouvé les défauts, et un script de recette jeté dans un répertoire
+temporaire est un script qu'on réécrit au lieu de le réutiliser.
+
+**Regarder les captures.** C'est la partie qu'on saute, et c'est celle qui trouve
+les défauts : un en-tête qui se chevauche, un libellé qui déborde, une colonne
+qui pousse le reste hors de l'écran. Aucun test ne le voit — le DOM est le même
+dans les deux cas, c'est la **mise en page** qui change.
+
+---
+
+## 5. Conventions de code
+
+### Pile
+
+Un seul module de production, `express`. La base est `node:sqlite`, le module
+natif de Node — **pas** `better-sqlite3`, écarté parce qu'il demande une
+compilation native, donc un `python3`, un `make` et un `g++` dans l'image.
+`linkedom` est une devDependency : il sert aux tests de rendu.
+
+`src/db.js` enveloppe `node:sqlite` avec un compteur de profondeur pour les
+transactions imbriquables (`BEGIN` au niveau 0, `SAVEPOINT` en dessous), parce
+que `node:sqlite` refuse lui-même d'imbriquer.
+
+### Échec au démarrage
+
+Le contenu est chargé au **démarrage du module**, en `await`. Une faute de
+frappe dans un flag, un `order` dupliqué, un `charge` incohérent ou un
+`meta.story` manquant **empêche le serveur de démarrer**, avec un message qui
+nomme le fichier et la quête. C'est délibéré : un contenu invalide découvert par
+un élève devant trente collègues est pire qu'un portail qui ne démarre pas le
+matin.
+
+C'est aussi la seule défense contre un `meta.story` oublié. Le fil rouge est la
+raison d'être du produit ; le laisser disparaître ne produirait **aucune
+erreur** — le panneau se rendrait, les tests passeraient, et le jeu serait redevenu
+une liste d'exercices.
+
+### Nommage
+
+Le vocabulaire `arena` (`ARENA_CHANGED`, `X-Arena-Token`, `repo/arena.js`)
+reste en place alors que le produit s'appelle Opération Beluga : c'est un
+contrat d'API et des noms de fichiers déjà en place, et les renommer coûterait un
+diff de plusieurs centaines de lignes pour aucun gain. Le nom de produit a changé
+**deux fois** — Docker Ops Race, puis Atelier Docker, puis Opération Beluga —
+l'identifiant technique, non. Le « nettoyage » a déjà été tenté une fois, et le
+diff a été annulé.

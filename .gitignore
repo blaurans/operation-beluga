@@ -1,0 +1,30 @@
+node_modules/
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Fichiers d'environnement et leurs sauvegardes. Le motif est volontairement
+# large : une sauvegarde de `.env` (`cp .env .env.avant`) contient la clé
+# d'administration en clair, et un `.gitignore` qui ne couvre qu'.env'
+# laisserait passer la sauvegarde au premier `git add -A`.
+.env
+.env.*
+*.env
+*.env.*
+
+# Le gabarit, lui, doit rester versionné : c'est le fichier qu'on lit pour savoir
+# quelles variables poser. Il est avalé par `.env.*` ci-dessus, donc il lui
+# faut une exception explicite.
+#
+# Elle n'est pas cosmétique. `git check-ignore` — le test que fait
+# `test/gitignore.test.js` — considère un fichier déjà suivi comme jamais
+# ignoré : dans l'ancien dépôt, `.env.example` passait parce qu'il était dans
+# l'index depuis toujours, pas parce que ce fichier l'autorisait. Dans un dépôt
+# neuf, le même `git add -A` le laisse tomber en silence, et le test échoue
+# sans que rien n'ait eu l'air de changer.
+!.env.example
+
+*.log
+.DS_Store

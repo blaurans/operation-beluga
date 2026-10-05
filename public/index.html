@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opération Beluga</title>
+<meta name="description" content="Serious game d'apprentissage de Docker. Sauver le soldat Beluga, copilote d'un avion dégradé, en faisant tourner les services de bord.">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐋</text></svg>">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     La V2 avait deux vues sur cette page : le portail enseignant — la classe,
+     l'inscription rapide — et le jeu. Le portail est parti dans /admin, derrière
+     le mot de passe. Ce qu'il montrait, la classe et les adresses IP, y est
+     déjà et en mieux ; et sa lecture ne peut plus être publique.
+
+     Il était d'ailleurs à moitié mort : le tableau de classe dépend de
+     /api/overview, fermée le jour où l'administration a été verrouillée. La page
+     d'accueil affichait donc un toast d'erreur à quiconque la chargeait.
+
+     `/` et `/#/` mènent au jeu. Un élève qui tape l'adresse du portail entre
+     directement dans l'atelier ; l'enseignant passe par /admin.
+     ══════════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════ LE JEU, c'est la page -->
+<!-- Pas de `hidden` : c'est la seule vue de ce document, et `[hidden]`
+     l'emporterait sur tout `display` de la feuille de style. -->
+<div id="game" class="screen">
+
+  <!-- Choix du mode / connexion -->
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <div class="gate-brand"><span>🐋</span> OPÉRATION BELUGA</div>
+      <p class="gate-sub">
+        Vol Beluga, au-dessus de l'océan. Le copilote est inconscient et son
+        état s'aggrave. <b>Choisis ton mode</b> : les deux façons de jouer sont
+        <b>identiques</b> — mêmes missions, mêmes questions, mêmes indices.
+        La seule différence est le prix de l'aide.
+      </p>
+
+      <div class="mode-pick">
+        <button class="mode mode-comp" data-mode="competitive" type="button">
+          <div class="mode-top"><span class="mode-ico">🌀</span><span class="mode-badge">Turbulence</span></div>
+          <h3>Le vol se dégrade</h3>
+          <ul>
+            <li>Les <b>deux premiers indices</b> coûtent de l'autonomie</li>
+            <li>Le <b>dernier</b> est toujours gratuit : personne ne reste bloqué</li>
+            <li>Le <b>temps</b> par mission est affiché, pour toi</li>
+            <li>Tes quêtes autonomes s'affichent en clair</li>
+          </ul>
+          <div class="mode-go">Prendre les commandes →</div>
+        </button>
+
+        <button class="mode mode-norm" data-mode="normal" type="button">
+          <div class="mode-top"><span class="mode-ico">☁️</span><span class="mode-badge">Calme</span></div>
+          <h3>Cabine tranquille</h3>
+          <ul>
+            <li><b>Tous les indices sont gratuits</b>, sans conséquence</li>
+            <li>Aucun <b>chrono</b> nulle part</li>
+            <li>Les mêmes <b>missions</b>, dans le même ordre</li>
+            <li>Tu reprends où tu t'es arrêté, quand tu veux</li>
+          </ul>
+          <div class="mode-go">Apprendre sans regarder l'heure →</div>
+        </button>
+      </div>
+
+      <p class="gate-foot">
+        Dans les deux modes, on mesure trois choses : où tu en es, ce que tu as
+        su faire <b>seul</b>, et ce que tu as <b>compris</b>. Aucun classement,
+        aucun score — la mesure ne se compare qu'à toi-même.
+      </p>
+
+      <form class="gate-form" id="gateForm" hidden>
+        <label for="gTeam">Ton pseudo</label>
+        <input id="gTeam" type="text" placeholder="ex. Marine" autocomplete="off" required minlength="2" maxlength="32">
+        <label for="gSecret">Secret <span class="opt">(facultatif, mais fortement conseillé)</span></label>
+        <input id="gSecret" type="text" placeholder="un mot que seul tu connaisses" autocomplete="off">
+        <p class="field-note">
+          Sans secret, ton pseudo est une <b>clé publique</b> : n'importe qui le
+          tape et prend ta place avec ta progression. Le secret est ce qui
+          l'en empêche. Si tu en as déjà choisi un, recopie-le ici — c'est ce
+          qui te permet de retrouver ta session après un rechargement.
+        </p>
+        <p class="gate-mode">Mode choisi : <b id="gateModeLabel"></b> <button type="button" class="linkish" id="changeMode">changer</button></p>
+        <button class="btn btn-primary btn-lg" type="submit">Monter dans le poste</button>
+        <p class="reg-msg" id="gateMsg"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Parcours -->
+  <div id="play" hidden>
+    <header class="play-head">
+      <div class="wrap head-row">
+        <div class="play-id">
+          <span class="team-name" id="teamName">—</span>
+          <span class="chip" id="modeChip">—</span>
+          <span class="since" id="sinceTag"></span>
+          <button class="token-chip" id="tokenChip" type="button"
+                  title="Copier mon jeton d'API">…</button>
+        </div>
+        <div class="play-stats">
+          <div class="stat" id="statLevel"><span class="stat-k">Niveau</span><span class="stat-v" id="levelVal">—</span></div>
+          <div class="stat" id="statAutonomy"><span class="stat-k">Autonomie</span><span class="stat-v" id="autonomyVal">—</span></div>
+          <div class="stat" id="statProgress"><span class="stat-k">Progression</span><span class="stat-v" id="progressVal">0/0</span></div>
+          <button class="btn btn-ghost btn-sm" id="btnHelp">? Aide</button>
+          <button class="btn btn-ghost btn-sm" id="btnQuit">Quitter</button>
+        </div>
+      </div>
+      <div class="progress-rail"><div id="rail"></div></div>
+    </header>
+
+    <main class="wrap play-body">
+      <aside class="side-col">
+        <!-- Le carnet de bord vient AVANT le plan : c'est la vue d'ensemble du
+             vol, et le plan n'est qu'un moyen d'y aller. Il est rendu par
+             `renderCarnet()` à partir de `state.pack.modules` — aucune requête
+             supplémentaire, donc rien à invalider côté serveur. -->
+        <section class="logbook" id="logbook" aria-label="Carnet de bord"></section>
+        <section class="quest-map" id="questMap" aria-label="Plan du parcours"></section>
+        <section class="history" id="historyBox" aria-label="Mes résultats"></section>
+      </aside>
+
+      <section class="quest-panel" id="questPanel"></section>
+    </main>
+  </div>
+</div>
+
+<!-- Aide / mémento -->
+<dialog id="helpDlg" class="dlg">
+  <div class="dlg-head">
+    <h2>Mémento des commandes</h2>
+    <button class="btn btn-ghost btn-sm" id="closeHelp">✕</button>
+  </div>
+  <div class="dlg-body">
+    <p class="dlg-note">Ces commandes se tapent dans <b>ton</b> terminal, sur le serveur de bord — pas ici. Le portail ne sert qu'à valider tes flags.</p>
+    <div class="table-scroll">
+      <table class="board compact"><tbody id="cmdBody"></tbody></table>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<!-- md.js est importé en module par app.js ; pas de balise script ici. -->
+<script type="module" src="/app.js"></script>
+</body>
+</html>
