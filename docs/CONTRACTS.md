@@ -263,7 +263,7 @@ Invariants :
 
 ## 2. Contrat d'API
 
-Base : `https://atelierdocker.laurans.org`. JSON en entrée et sortie, sauf
+Base : `https://operation-beluga.laurans.org`. JSON en entrée et sortie, sauf
 indication contraire.
 
 ### 2.1 `POST /api/register`
