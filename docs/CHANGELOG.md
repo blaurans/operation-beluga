@@ -99,7 +99,7 @@ Les deux portails tournent **en parallèle** sur `ociuc`, derrière le même Cad
 
 | | Atelier Docker | Opération Beluga |
 |---|---|---|
-| domaine | `atelierdocker.laurans.org` | `operationbeluga.laurans.org` |
+| domaine | `atelierdocker.laurans.org` | `operation-beluga.laurans.org` |
 | conteneur | `atelier-docker` | `operation-beluga` |
 | volume | `atelier-docker-data` | `operation-beluga-data` |
 | clé d'administration | `ATELIER_ADMIN_KEY` | `BELUGA_ADMIN_KEY` |

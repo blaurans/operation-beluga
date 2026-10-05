@@ -106,7 +106,7 @@ contenu qui va changer sous elle.
 
 | | |
 |---|---|
-| URL publique | `https://operationbeluga.laurans.org` |
+| URL publique | `https://operation-beluga.laurans.org` |
 | Machine | `ssh ociuc` — aarch64 (Ampere A1), Ubuntu 24.04.5 |
 | Dépôt du serveur | `/app/operation-beluga` (clone du dépôt GitHub) |
 | Caddy | conteneur `caddy`, Caddyfile monté depuis `/app/headscale/Caddyfile` |
@@ -127,7 +127,7 @@ docker compose up -d --build
 Puis vérifier :
 
 ```bash
-curl -sS https://operationbeluga.laurans.org/healthz
+curl -sS https://operation-beluga.laurans.org/healthz
 docker ps --filter name=operation-beluga --format '{{.Status}}'
 ```
 
@@ -139,7 +139,7 @@ même réseau Docker. Il n'y a **rien de partagé** :
 
 | | Atelier Docker | Opération Beluga |
 |---|---|---|
-| domaine | `atelierdocker.laurans.org` | `operationbeluga.laurans.org` |
+| domaine | `atelierdocker.laurans.org` | `operation-beluga.laurans.org` |
 | service compose | `atelier` | `beluga` |
 | conteneur | `atelier-docker` | `operation-beluga` |
 | volume | `atelier-docker-data` | `operation-beluga-data` |

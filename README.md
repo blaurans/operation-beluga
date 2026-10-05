@@ -52,16 +52,16 @@ portails tournent **en parallèle**, sur deux volumes et deux domaines distincts
 
 ## Mise en ligne
 
-Le portail est en production sur **https://operationbeluga.laurans.org**, servi
+Le portail est en production sur **https://operation-beluga.laurans.org**, servi
 par Caddy (TLS automatique) devant le conteneur.
 
 Trois adresses, et c'est tout :
 
 | adresse | pour qui |
 |---|---|
-| `https://operationbeluga.laurans.org` | **les élèves.** C'est la page d'accueil : elle ouvre directement l'écran de choix de mode |
-| `https://operationbeluga.laurans.org/#/` | les mêmes, par l'ancienne adresse — elle fonctionne encore |
-| `https://operationbeluga.laurans.org/admin` | **l'enseignant.** Derrière le mot de passe du `.env` |
+| `https://operation-beluga.laurans.org` | **les élèves.** C'est la page d'accueil : elle ouvre directement l'écran de choix de mode |
+| `https://operation-beluga.laurans.org/#/` | les mêmes, par l'ancienne adresse — elle fonctionne encore |
+| `https://operation-beluga.laurans.org/admin` | **l'enseignant.** Derrière le mot de passe du `.env` |
 
 ```bash
 cp .env.example .env
@@ -72,7 +72,7 @@ docker compose up -d --build
 Puis, côté reverse proxy, un bloc de plus dans le Caddyfile :
 
 ```
-operationbeluga.laurans.org {
+operation-beluga.laurans.org {
     reverse_proxy operation-beluga:8000
 }
 ```
@@ -387,17 +387,17 @@ pas de sens.
 
 ```bash
 # Statistiques : où la classe bloque
-curl -H "X-Arena-Admin: $MDP" https://operationbeluga.laurans.org/api/stats
+curl -H "X-Arena-Admin: $MDP" https://operation-beluga.laurans.org/api/stats
 
 # Remettre un joueur à zéro (oubli de jeton, réinscription).
 # La confirmation est obligatoire : sans elle le serveur refuse.
 curl -X POST -H "X-Arena-Admin: $MDP" -H "Content-Type: application/json" \
   -d '{"confirm":"oui"}' \
-  https://operationbeluga.laurans.org/api/admin/reset/MonPseudo
+  https://operation-beluga.laurans.org/api/admin/reset/MonPseudo
 
 # Supprimer une inscription
 curl -X POST -H "X-Arena-Admin: $MDP" \
-  https://operationbeluga.laurans.org/api/admin/delete/MonPseudo
+  https://operation-beluga.laurans.org/api/admin/delete/MonPseudo
 ```
 
 `$MDP` : `export BELUGA_ADMIN_KEY=$(grep BELUGA_ADMIN_KEY /app/operation-beluga/.env | cut -d= -f2-)`

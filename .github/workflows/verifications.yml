@@ -21,7 +21,7 @@ on:
 # valider le portail d'atelierdocker en croyant vérifier celui-ci — c'est-à-dire
 # ne rien vérifier du tout. Le port de tests ci-dessous est sans rapport.
 env:
-  PORTAIL: https://operationbeluga.laurans.org
+  PORTAIL: https://operation-beluga.laurans.org
 
 jobs:
   tests:

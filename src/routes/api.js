@@ -613,8 +613,8 @@ const COMMAND_SHEET = [
   { action: 'Démarrer la pile Compose', cmd: 'docker compose up -d' },
   { action: 'État de la pile Compose', cmd: 'docker compose ps' },
   { action: 'Arrêter la pile Compose', cmd: 'docker compose down' },
-  { action: "S'inscrire (Turbulence)", cmd: `curl -X POST https://operationbeluga.laurans.org/api/register -H "Content-Type: application/json" -d '{"team":"MonPseudo","mode":"competitive"}'` },
-  { action: "S'inscrire (Calme)", cmd: `curl -X POST https://operationbeluga.laurans.org/api/register -H "Content-Type: application/json" -d '{"team":"Marie_Alice","mode":"normal"}'` },
-  { action: 'Soumettre un flag', cmd: `curl -X POST https://operationbeluga.laurans.org/api/submit -H "Content-Type: application/json" -H "X-Arena-Token: dq_..." -d '{"flag":"FLAG{...}"}'` },
-  { action: 'Voir la classe (mot de passe enseignant requis)', cmd: 'curl -H "X-Arena-Admin: $MDP" https://operationbeluga.laurans.org/api/overview' },
+  { action: "S'inscrire (Turbulence)", cmd: `curl -X POST https://operation-beluga.laurans.org/api/register -H "Content-Type: application/json" -d '{"team":"MonPseudo","mode":"competitive"}'` },
+  { action: "S'inscrire (Calme)", cmd: `curl -X POST https://operation-beluga.laurans.org/api/register -H "Content-Type: application/json" -d '{"team":"Marie_Alice","mode":"normal"}'` },
+  { action: 'Soumettre un flag', cmd: `curl -X POST https://operation-beluga.laurans.org/api/submit -H "Content-Type: application/json" -H "X-Arena-Token: dq_..." -d '{"flag":"FLAG{...}"}'` },
+  { action: 'Voir la classe (mot de passe enseignant requis)', cmd: 'curl -H "X-Arena-Admin: $MDP" https://operation-beluga.laurans.org/api/overview' },
 ];

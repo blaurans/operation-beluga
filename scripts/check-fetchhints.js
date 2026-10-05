@@ -4,7 +4,7 @@
  * réellement : on l'exécute telle quelle, dans un conteneur jetable, contre un
  * portail de test.
  *
- *   node scripts/check-fetchhints.js [https://operationbeluga.laurans.org]
+ *   node scripts/check-fetchhints.js [https://operation-beluga.laurans.org]
  *
  * Prérequis : un serveur qui tourne et un jeton. Le script s'inscrit tout seul
  * (« VerifSecrets ») et récupère son jeton.
@@ -16,7 +16,7 @@
  */
 import { spawn } from 'node:child_process';
 
-const B = process.argv[2] ?? 'https://operationbeluga.laurans.org';
+const B = process.argv[2] ?? 'https://operation-beluga.laurans.org';
 // SERVER_IP désigne l'origine complète, protocole compris : le portail est
 // derrière Caddy, donc les commandes doivent repartir en https et sans port.
 // Avec TRUST_PROXY=1, `req.protocol` vaut https et `req.hostname` ne porte

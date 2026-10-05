@@ -13,7 +13,7 @@
  * Sans clé d'administration, il ne fait rien et le dit : c'est le cas en local,
  * où il n'y a rien à nettoyer.
  */
-const B = process.argv[2] ?? 'https://operationbeluga.laurans.org';
+const B = process.argv[2] ?? 'https://operation-beluga.laurans.org';
 const CLE = process.env.BELUGA_ADMIN_KEY ?? '';
 
 const PREV = 'Verif_';

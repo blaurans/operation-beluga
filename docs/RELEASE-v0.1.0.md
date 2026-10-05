@@ -171,13 +171,13 @@ pendant une séance — *qui est bloqué, et où*.
 ## Déploiement
 
 Les deux portails tournent **en parallèle** sur `ociuc`, derrière le même Caddy :
-`atelierdocker.laurans.org` et `operationbeluga.laurans.org`. **Rien n'est
+`atelierdocker.laurans.org` et `operation-beluga.laurans.org`. **Rien n'est
 partagé** — ni volume, ni base, ni clé, ni sel. C'est délibéré, et c'est le
 point à ne pas rater.
 
 | | Atelier Docker | Opération Beluga |
 |---|---|---|
-| domaine | `atelierdocker.laurans.org` | `operationbeluga.laurans.org` |
+| domaine | `atelierdocker.laurans.org` | `operation-beluga.laurans.org` |
 | conteneur | `atelier-docker` | `operation-beluga` |
 | volume | `atelier-docker-data` | `operation-beluga-data` |
 | clé | `ATELIER_ADMIN_KEY` | `BELUGA_ADMIN_KEY` |
@@ -198,7 +198,7 @@ docker compose up -d --build
 Le bloc Caddy à ajouter :
 
 ```
-operationbeluga.laurans.org {
+operation-beluga.laurans.org {
     reverse_proxy operation-beluga:8000
 }
 ```
