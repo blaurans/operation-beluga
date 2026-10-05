@@ -325,8 +325,84 @@ peut pas vérifier qu'il a fini sa tâche.
 
 ---
 
+## [0.4.0] — 2026-10-05
+
+**La sauvegarde quotidienne des deux bases**, avec restauration vérifiée.
+
+### Ce qui est en place
+
+`scripts/sauvegarde-bases.sh` dump les bases de `operation-beluga` **et**
+`atelier-docker` — les deux jeux partagent le même sort, et sauvegarder l'un
+sans l'autre laisserait un portail accessible et l'autre vide.
+
+Le dump se fait par `VACUUM INTO`, donc **cohérent même base en cours
+d'écriture**. Ce n'était pas un détail théorique : pendant les essais, les
+élèves d'`Atelier Docker` étaient connectés, et la sauvegarde a pris leurs
+progressions sans les interrompre.
+
+Le dump est **contrôlé avant d'être copié dehors** : `PRAGMA integrity_check`
+dans le conteneur, puis une seconde vérification sur le fichier copié, avec
+l'outillage de l'hôte. Un dump corrompu dans le dossier de sauvegarde ne se
+distingue d'un bon que le jour où on en a besoin — c'est le pire moment pour
+découvrir la différence.
+
+La rétention est de 7 jours, par portail. Un glob large purgerait les dumps de
+l'autre jeu.
+
+L'exécution est portée par un **timer systemd**, à 3 h 12 avec un écart
+aléatoire de 15 minutes : un déclencheur à `hh:00` réveille tous les timers de la
+machine en même temps. `cron` n'est pas actif sur cette machine, et un timer
+survit au redémarrage.
+
+### La restauration se prouve
+
+`scripts/restaure-base.sh` arrête le portail, remplace la base, **retire le
+`-wal` de l'ancienne**, remet le fichier au bon propriétaire, redémarre, puis
+**recompte les joueurs et compare au dump**. Un écart est un échec, pas un
+avertissement.
+
+Le retrait du `-wal` est l'essentiel, et c'est un bug que seul un test de bout
+en bout pouvait prendre. Le premier jet annonçait « restauré », son contrôle
+d'intégrité disait « ok », et **le joueur restauré avait disparu** : sa
+suppression était encore dans le `beluga.sqlite-wal`, que le nouveau fichier ne
+remplaçait pas, et SQLite rejouait le WAL par-dessus.
+
+C'est le pire mode de défaillance possible pour une sauvegarde, parce qu'il
+n'en a l'air d'aucun. C'est aussi ce que le jeu enseigne aux élèves à
+l'atelier 7 — un test qui n'a jamais échoué n'a pas été exécuté — et c'est pour
+cela que la restauration se compte elle-même.
+
+### Une indisponibilité de deux minutes
+
+Le `--user 0:0` sur le conteneur jetant manque, et le `chown` a échoué : le
+fichier restauré est resté à `root`, et le serveur — qui tourne sous `arena` —
+s'est mis en boucle de redémarrage sur `attempt to write a readonly database`.
+Le portail est resté indisponible près de deux minutes.
+
+Le script s'en est aperçu : il s'est arrêté sur le `chown`. Le conteneur, lui,
+était resté arrêté, et c'est ce downtime qui a été long. Un `trap` qui
+redémarre le portail à la sortie existe maintenant, pour que la prochaine erreur
+entre l'arrêt et le redémarrage coûte dix secondes et non deux minutes.
+
+### Ce que la sauvegarde ne fait pas
+
+Elle **n'est pas hors site**. Les dumps atterrissent sur le même `/dev/sda1`
+que les bases : elle protège d'un accident logique — une réinitialisation, un
+volume corrompu — et pas de la mort du disque.
+
+`/mnt/jellyfin-sftp` existe sur la machine, mais c'est un montage rclone **en
+lecture seule** vers une autre machine : ce n'est pas une destination
+d'écriture. Il faut un accès en écriture ailleurs, et c'est une décision, pas
+une ligne de code. Elle est notée au § 2 du REPRISE.
+
+Le dossier `sauvegardes/` est dans `.gitignore` : ce sont des copies des bases,
+et les committer exposerait les pseudos, les adresses IP et les jetons des
+élèves.
+
+---
+
 ## [1.0.0] — à venir
 
-Le gel. Il conditionne : l'atelier 8 écrit et validé par `check-fetchhints` —
-c'est-à-dire 28 quêtes, dont une manœuvre finale qui assemble toute la pile —
-et une sauvegarde du volume.
+Le gel. Il ne reste plus de contenu à écrire : les 28 quêtes sont là, et la
+sauvegarde est en place. Ce qui reste est une relecture du contenu avec un œil
+neuf, et la décision sur la destination hors site.

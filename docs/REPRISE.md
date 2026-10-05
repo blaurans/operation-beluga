@@ -73,11 +73,14 @@ Le projet est **jouable mais pas terminé**. Ne le présente pas comme fini.
 
 | # | quoi | où | coût |
 |---|---|---|---|
-| 1 | **Une sauvegarde** du volume | hors dépôt | petit, à faire avant un vrai cours |
+| 1 | **Une sauvegarde hors site** | voir § 3 | décision à prendre, pas du code |
 | 2 | Nettoyer le CSS mort, `inject-fetchhint.js` | `public/style.css`, `scripts/` | cosmétique |
 
-**Le jeu est complet** : 8 ateliers, 28 quêtes, cohérents de bout en bout. Il
-reste la sauvegarde, qui n'est pas une question de contenu.
+**Le jeu est complet** : 8 ateliers, 28 quêtes, cohérents de bout en bout.
+
+La sauvegarde quotidienne **est en place** (`scripts/sauvegarde-bases.sh` et un timer
+systemd). Ce qui manque est la destination hors site — c'est une décision, pas
+une ligne de code. Voir § 3.
 
 **Le jeu est complet.** Les huit ateliers racontent le vol : leurs intros, leurs
 énoncés, leurs questions et leurs flags ont été basculés de l'ancienne intrigue
@@ -161,6 +164,58 @@ même réseau Docker. Il n'y a **rien de partagé** :
   `npm run check-fetchhints` sans argument teste le portail d'`Atelier Docker` et
   valide donc l'autre jeu. La CI passe l'URL en argument (`$PORTAIL`) ;
   en local, passe-la aussi.
+
+### La sauvegarde
+
+```bash
+# Forcer une exécution
+systemctl start operation-beluga-sauvegarde.service
+# Journal
+journalctl -u operation-beluga-sauvegarde
+# Prochaine exécution
+systemctl list-timers operation-beluga-sauvegarde.timer
+# Voir les dumps, et en restaurer un
+sudo bash scripts/restaure-base.sh --lister
+sudo bash scripts/restaure-base.sh operation-beluga            # le plus récent
+sudo bash scripts/restaure-base.sh operation-beluga --verifier-seulement
+```
+
+Les deux portails sont sauvegardés ensemble, dans `/app/operation-beluga/sauvegardes`,
+avec 7 jours de rétention. Le dump est fait par `VACUUM INTO`, donc **cohérent
+même base en cours d'écriture** — le portail sert des élèves pendant que la
+sauvegarde se fait, et c'est vérifié : les élèves d'`Atelier Docker` étaient
+connectés pendant les essais.
+
+**Ce qu'elle protège** : un accident logique — une réinitialisation par erreur, un
+`seed --force`, un volume corrompu, un conteneur recréé avec le mauvais volume.
+
+**Ce qu'elle ne protège pas** : la mort du disque. Les dumps sont sur le même
+`/dev/sda1` que les bases. C'est exactement ce que l'atelier 7 enseigne aux
+élèves — *« un volume n'est pas une sauvegarde, il est sur la même machine que ce
+qu'il protège »* — et c'est pour ça qu'une destination hors site reste à poser.
+`/mnt/jellyfin-sftp` existe sur la machine mais c'est un montage rclone **en
+lecture seule** vers une autre machine : ce n'est pas une destination
+d'écriture. Il faut un accès en écriture ailleurs, et c'est une décision.
+
+### Restaurer, et le prouver
+
+`restaure-base.sh` arrête le portail, remplace la base, **retire le `-wal` de
+l'ancienne**, remet le fichier au bon propriétaire, redémarre, puis **recompte
+les joueurs et compare au dump**. Un écart est un échec, pas un avertissement.
+
+Le retrait du `-wal` n'est pas une précaution de style. Le premier jet de ce
+script annonçait « restauré », son contrôle d'intégrité disait « ok », et **le
+joueur restauré avait disparu** : la suppression était encore dans le
+`beluga.sqlite-wal`, que le nouveau fichier ne remplaçait pas, et SQLite rejouait
+le WAL par-dessus. C'est le pire mode de défaillance possible pour une
+sauvegarde, parce qu'il n'en a l'air d'aucun. D'où le recompte.
+
+Le `--user 0:0` sur le conteneur jetant a le même genre d'histoire : sans lui,
+le `chown` échoue, le fichier restauré reste à `root`, et le serveur — qui tourne
+sous `arena` — se met en boucle de redémarrage sur `attempt to write a readonly
+database`. Cela a rendu le portail indisponible pendant près de deux minutes,
+le temps que quelqu'un le remarque. Un `trap` qui redémarre le conteneur à la
+sortie existe maintenant pour que ça ne se reproduise pas.
 
 ### Le mot de passe d'administration
 
@@ -277,9 +332,10 @@ docs/
   RELEASE-v0.1.0.md     notes de version
 scripts/
   check-content.js      le contenu est-il chargeable ?
-  # (les deux outils de renommage sont dans `outils/`, avec le contenu :
-  #  ils agissent sur `content/quests/`, pas sur le serveur)
   check-fetchhints.js   REJOUE les commandes de récupération — demande Docker
+  sauvegarde-bases.sh    dump quotidien des deux bases
+  restaure-base.sh      restaure un dump, et recompte pour le prouver
+  installe-sauvegarde.sh  pose le timer systemd, et vérifie une restauration
   nettoie-verif.js      purge les joueurs de vérification
   smoke.js              joue toutes les quêtes, affiche la maîtrise
   seed.js               réinitialise la base
@@ -706,9 +762,9 @@ Liste courte des erreurs récurrentes. Chacune a coûté du temps.
 
 ## 14. Limites connues, et la suite logique
 
-1. **Aucune sauvegarde.** Le volume `operation-beluga-data` est sur le seul
-   disque du serveur (86 % utilisés). Pas de copie, pas de réplication. C'est le
-   risque le plus élevé du déploiement — et le même pour `Atelier Docker`.
+1. **La sauvegarde n'est pas hors site.** Elle protège d'un accident logique,
+   pas de la mort du disque : les dumps sont sur le même disque que les bases.
+   Une destination en écriture ailleurs reste à poser — voir § 3.
 2. **`LINEAR_PROGRESSION` n'est pas une contrainte serveur.** `/api/submit`
    n'accepte que le flag, dans les deux cas. Assumé. Pour une vraie contrainte :
    `ARENA_ATTESTATION=1`.

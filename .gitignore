@@ -1,5 +1,9 @@
 node_modules/
 data/
+# Les dumps de sauvegarde des bases. Ce sont des copies de `data/`, jamais
+# versionnées — et les committer exposerait les pseudos, les adresses IP et les
+# jetons des élèves. Voir scripts/sauvegarde-bases.sh.
+sauvegardes/
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
