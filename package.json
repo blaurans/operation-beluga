@@ -1,6 +1,6 @@
 {
   "name": "operation-beluga",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Operation Beluga — serious game d'apprentissage de Docker : sauver le soldat Beluga, copilote d'un avion degrade, en faisant tourner les services de bord.",
   "type": "module",
   "private": true,

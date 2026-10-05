@@ -18,7 +18,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: operation-beluga:0.2
+    image: operation-beluga:0.3
     container_name: operation-beluga
     restart: unless-stopped
     environment:
