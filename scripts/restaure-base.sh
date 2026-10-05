@@ -188,8 +188,8 @@ redemarrer_en_sortie() {
   local code=$?
   if [ "$code" -ne 0 ] && [ "$(docker inspect -f '{{.State.Running}}' "$portail" 2>/dev/null || echo false)" != "true" ]; then
     printf '\n' >&2
-    printf 'ERREUR %s : le portail est arrêté et le redémarrage n\047a pas été fait.\n' "$code" >&2
-    printf 'Redémarrage de %s. La base précédente est dans le volume.\n' "$portail" >&2
+    printf "ERREUR %s : le portail est arrêté, le redémarrage n'a pas été fait.\n" "$code" >&2
+    printf "Redémarrage de %s. La base précédente est dans le volume.\n" "$portail" >&2
     docker start "$portail" >/dev/null 2>&1 || true
   fi
   rm -f "${relais:-}" 2>/dev/null || true
@@ -269,8 +269,53 @@ if [ "$obtenus" = "$attendus" ]; then
 else
   printf '\n' >&2
   printf 'ÉCHEC : le dump contient %s joueur(s), la base en contient %s.\n' "$attendus" "$obtenus" >&2
-  printf 'La restauration n\047est pas fiable, et le joueur vient peut-être de\n' >&2
-  printf 'revenir sans qu\047on le voie. La base précédente est dans le volume,\n' >&2
+  printf "La restauration n'est pas fiable, et le joueur vient peut-être de\n" >&2
+  printf "revenir sans qu'on le voie. La base précédente est dans le volume,\n" >&2
   printf 'sous %s.\n' "$archive" >&2
   exit 4
 fi
+
+# ── purge des archives de sécurité ───────────────────────────────────────
+#
+# Chaque restauration laisse une copie de la base qu'elle remplaçait, et rien
+# ne la retirait : le volume en accumulait une par restauration, sans limite.
+# C'est le défaut inverse d'une sauvegarde qui ne purge pas — on ne perd rien,
+# on sature le disque.
+#
+# On garde les `ARCHIVES` plus récentes, comme pour les dumps. Le défaut est
+# petit : une restauration est rare, et une archive de plus ne coûte qu'un
+# fichier de 60 ko. Mais « sans limite » veut dire « jusqu'à ce que le disque
+# soit plein », et un serveur de portail à 86 % n'a pas de marge.
+
+ARCHIVES="${ARCHIVES:-3}"
+log "purge des archives de sécurité, il en restera $ARCHIVES"
+
+# Le glob est fait par le **shell du conteneur**, pas par le nôtre : le volume
+# n'existe que là. Le motif est `<dossier>/.avant-restauration-*`, le dossier
+# étant dérivé de la base : les archives sont nommées d'un **point** devant, pour
+# rester hors du chemin que le portail connaît.
+#
+# La première version cherchait `${base}.avant-restauration-*` — donc
+# `beluga.sqlite.avant-…` — alors que les fichiers s'appellent
+# `.avant-restauration-…`. Le glob ne trouvait rien, et le script annonçait
+# « 0 archive restante » : un décompte juste, sur un motif faux. C'est le genre
+# de message qui fait croire que la purge a fonctionné. Et on passe par `docker run` plutôt que `docker exec` parce
+# que le portail vient d'être arrêté puis redémarré ; `exec` raterait le cas où
+# le redémarrage a échoué. Un conteneur jetant monte le volume sans dépendre de
+# l'état du portail.
+#
+# Le script du conteneur est en apostrophes simples, et les arguments arrivent
+# par position. La première version passait tout dans une double chaîne : le
+# shell de l'appelant y développait `$base` et les `$( )`, et le chemin arrivait
+# vide. La purge ne supprimait rien, sans un mot, et le dossier en a accumulé
+# six au lieu de trois.
+docker run --rm --user 0:0 --volumes-from "$portail" \
+  --entrypoint sh "$(image_du_conteneur)" -c '
+    dossier=$(dirname "$1")
+    keep="$2"
+    ls -1t "$dossier"/.avant-restauration-*.sqlite 2>/dev/null | tail -n "+$((keep + 1))" |
+      while read -r fichier; do
+        rm -f "$fichier" && echo "  purgé $(basename "$fichier")"
+      done
+    echo "  archives restantes : $(ls -1 "$dossier"/.avant-restauration-*.sqlite 2>/dev/null | wc -l)"
+  ' sh "$base" "$ARCHIVES" 2>/dev/null || log "  purge impossible — sans gravité"

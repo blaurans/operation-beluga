@@ -399,6 +399,29 @@ Le dossier `sauvegardes/` est dans `.gitignore` : ce sont des copies des bases,
 et les committer exposerait les pseudos, les adresses IP et les jetons des
 élèves.
 
+### Les archives de sécurité sont purgées, elles aussi
+
+Chaque restauration laisse dans le volume une copie de la base qu'elle
+remplaçait, pour pouvoir revenir en arrière. Rien ne la retirait : le volume en
+accumulait une par restauration. C'est le défaut inverse d'une sauvegarde qui ne
+purge pas — on ne perd rien, on sature le disque.
+
+Le motif de purge a d'abord été faux deux fois, et **les deux fois le script a
+annoncé que tout allait bien** :
+
+- le glob cherchait `beluga.sqlite.avant-restauration-*` alors que les fichiers
+  s'appellent `.avant-restauration-*` — un point devant, pour rester hors du
+  chemin que le portail connaît. Le décompte final affichait « 0 archive
+  restante » : un chiffre juste, sur un motif qui ne trouvait rien ;
+- le script du conteneur était passé dans une double chaîne, donc le shell de
+  l'appelant développait `$base` et les `$( )` à sa place, et le chemin arrivait
+  vide.
+
+C'est le même motif que la recette qui annonçait des questions réussies : un
+décompte ou un verdict produit par le code qu'il est censé vérifier. Les
+compter ne suffit pas, il faut les **faire venir d'ailleurs** — d'un `ls` dans
+le dossier, à la main.
+
 ---
 
 ## [1.0.0] — à venir
